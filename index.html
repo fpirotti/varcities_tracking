@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+<meta charset="UTF-8">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<title>VARCITIES Geo-Catch</title>
+
+<script type="text/javascript" src="js/zip.min.js"> </script>
+<script src="config.js"></script>
+<script src="src/App.js"></script>
+<script src="src/main.js"></script>
+
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta id="theme-color" name="theme-color" content="#4527A0">
+    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Raleway" type="text/css"> 
+    <link rel="manifest" href="manifest.json?a=33322">
+    <link rel="shortcut icon" href="img/favicon.ico" sizes="16x16 24x24 32x32 48x48 64x64 72x72 80x80 96x96 128x128 256x256" type="image/ico">
+    
+<meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
+
+
+  <meta name="description" content="">
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320"> 
+  <meta http-equiv="cleartype" content="on">
+<!--
+<link rel="shortcut icon" href="/favicon.ico" sizes="any">
+<link rel="shortcut icon" href="/favicon.svg" type="image/svg+xml">  
+<link rel="manifest" href="manifest.json">-->
+
+  <!--
+      Chrome 31+ has home screen icon 192×192 (the recommended size for multiple resolutions).
+      If it’s not defined on that size it will take 128×128.
+  -->
+  <link rel="icon" sizes="192x192" href="img/maskable_icon_x192.png">
+  <link rel="icon" sizes="128x128" href="img/maskable_icon_x128.png">
+
+  <!-- Tile icon for Win8 (144x144 + tile color) -->
+  <meta name="msapplication-TileImage" content="img/maskable_icon_x192.png">
+  <meta name="msapplication-TileColor" content="#222222">
+
+  <!-- SEO: If mobile URL is different from desktop URL, add a canonical link to the desktop page -->
+  <!--
+  <link rel="canonical" href="http://www.example.com/" >
+  -->
+
+  <!-- Add to homescreen for Chrome on Android -->
+ 
+  <meta name="mobile-web-app-capable" content="yes">
+ 
+
+  <!-- For iOS web apps. Delete if not needed. https://github.com/h5bp/mobile-boilerplate/issues/94 -->
+  
+ <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black">
+  <meta name="apple-mobile-web-app-title" content="">
+ <link rel="apple-touch-icon" href="img/maskable_icon_x192.png">
+
+  <!-- This script prevents links from opening in Mobile Safari. https://gist.github.com/1042026 -->
+  <!--
+  <script>(function(a,b,c){if(c in b&&b[c]){var d,e=a.location,f=/^(a|html)$/i;a.addEventListener("click",function(a){d=a.target;while(!f.test(d.nodeName))d=d.parentNode;"href"in d&&(d.href.indexOf("http")||~d.href.indexOf(e.host))&&(a.preventDefault(),e.href=d.href)},!1)}})(document,window.navigator,"standalone")</script>
+  -->
+
+  <link rel="stylesheet" href="css/normalize.css">
+  <link rel="stylesheet" href="css/main.css">
+  <link rel="stylesheet" href="css/bootstrap.min.css">
+  <link rel="stylesheet" href="style.css?d=d44">
+  
+  <script src="js/vendor/modernizr-2.8.3.min.js"></script>
+  
+</head>
+
+<body onload="init()">
+<main>
+  <div class="container">
+    
+    <span  id="start_demo" class="btn btn-lg btn-success  btn-block d-flex justify-content-center align-items-center" style="white-space:pre;" >
+    
+    <img src="img/white2.svg" alt="varcities" style="  width:3em;  " /> <b id="start_demo_txt">     START TRACKING         </b>
+    <span class="spinner-grow spinner-grow-sm   float-right invisible" role="status" aria-hidden="true" id="spinner"></span>
+  </span >
+    
+    
+    <a class="btn btn-lg btn-primary btn-block " onclick="$('#logContainer').toggle()">LOG<span class="navbar-toggler-icon"></span></a>
+    <div class="row" id="logContainer" style="display:none;"  >
+       <div class="col-md-12" id="logger" ></div> 
+   </div>
+  
+    <a class="btn btn-lg btn-primary btn-block" onclick="$('#accel').toggle(); " style="display:none;">ACCELEROMETER<span class="navbar-toggler-icon"></span></a>
+    <div id='accel' style="display:none;" > 
+    <div  class="row">
+          <div class="col-md-4">X-axis: <span id="Accelerometer_x">0</span><span> m/s<sup>2</sup></span></div>
+          <div class="col-md-4">Y-axis: <span id="Accelerometer_y">0</span><span> m/s<sup>2</sup></span></div>
+          <div class="col-md-4">Z-axis: <span id="Accelerometer_z">0</span><span> m/s<sup>2</sup></span></div>
+    </div>
+    <div  class="row">
+          <div class="col-md-4">Data Interval: <span id="Accelerometer_i">0</span><span> ms</span></div>
+          <div class="col-md-4">N. Events: <span id="num-observed-events">0</span><span></span></div>
+          <div class="col-md-4">Max recorded acceleration: <span id="Accelerometer_max">0</span><span>m/s<sup>2</sup></span></div>
+   </div>
+    <div  class="row">
+        <div class="col-md-12">Threshold for phone alarm (lower is more sensible to falling)</div>
+    </div>
+    <div  class="row">
+        <div class="col-md-12 slidecontainer">
+            <label for="accthresh"></label><input type="range" min="1" max="20" value="9" class="slider" id="accthresh">
+          <span id="accthreshvalue">0</span>
+        </div>
+    </div>
+    </div>
+    
+    <div id='geoloc'> 
+    <a class="btn btn-lg btn-primary btn-block " onclick="$('#geolocContainer').toggle()">GEOLOC<span class="navbar-toggler-icon"></span></a>
+    
+    <div id="geolocContainer" style="padding:10px; background:rgba(25,25,25,0.2);">
+        <div  class="row" style="display:none;">
+            <div class="col-md-12 slidecontainer">
+               Seconds between two tags: min=0.5, max=60</br>
+            <input type="range" id="geoloc_freq" name="geoloc_freq" min="0.5" max="20" step="0.5" value=1 style="margin:15px; width:50%">
+            
+            <label  for="geoloc_freq" id="geoloc_freq_value" style="font-size:20px; font-weight:900;">0</label>
+          </div>
+        </div>
+     
+        <div  class="row">
+            <div class="col-md-6 ">
+            Lat: <span id="geoloc_lat">0</span><span> °</span>
+          </div>
+            <div class="col-md-6 ">
+            Long: <span id="geoloc_lng">0</span><span> °</span>
+          </div>
+        </div>
+        <div  class="row">
+            <div class="col-md-6 ">
+            Acc: <span id="geoloc_acc">0</span><span> m</span>
+          </div>
+            <div class="col-md-6 ">
+            Num events: <span id="geoloc_n">0</span><span></span>
+          </div>
+        </div>  
+    </div>  
+    <div  class="row">   
+        <div class="col-md-12 " id="tracks">
+            <a id='linktag'></a>
+        </div>
+    </div>
+  </div> 
+    <a id="emergency_button" class="btn btn-lg  btn-danger btn-block"   href="#" role="button" style="height:4em;" onclick="">
+
+<!--       <img src="img/emergency.png" style="max-width:100%"> -->
+    </a> 
+     <hr>
+        <div  class="row" id="man">
+            <div class="col-md-12 text-justify">
+              This app records positions of the phone at a user-defined frequency and monitors the phone accelerometers 
+              keeping track of shocks to the smartphone that might indicate problems to the carrier. 
+              <hr>
+              The coordinates of the positions are sent directly to a server to track in real time the movements of the phone; this option can be turned off by the user, and is automatically turned off if not network is found.
+              
+              <hr>
+              The locations are saved locally when user stops to record positions, and all positions are sent to server and saved locally. 
+              If sending to server is successful then the local copy is deleted. If server connection fails (e.g. no network or server is down)
+              then the local copy is stored and synced at later time. Syncing can be forced by the user, or it is done automatically at next
+              app launch.
+              <hr>
+              Location data are downloaded in geoJson format (compressed in a ZIP archive), compatible with all GIS software, e.g. <a href="https://www.qgis.org/en/" target="_blank"> QGIS</a>.
+              <hr>
+              The big red button can be used to send a signal to the server and trigger further actions (e.g. emails or calls). 
+          </div>
+        </div>
+   </div>
+</main>
+
+        <!-- Add your site or application content here -->
+  
+        <script src="js/vendor/jquery-2.1.3.min.js"></script>
+        <script src="js/plugins.js"></script>
+
+        <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
+        <script>
+            (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
+            function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
+            e=o.createElement(i);r=o.getElementsByTagName(i)[0];
+            e.src='//www.google-analytics.com/analytics.js';
+            r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
+            ga('create','UA-XXXXX-X');ga('send','pageview');
+        </script>
+         
+        <script src="js/main.js"></script>
+        
+</body>
+
+</html>
