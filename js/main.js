@@ -5,7 +5,7 @@ if (localStorage.getItem("uid") === null) {
 }
   
 const uid = localStorage.getItem('uid'); //returns 4587ff526d
-
+var startTime;
 
 
 const options = {
@@ -32,7 +32,21 @@ const getlocation=true;
 const realTime=true;
 let realTimeOk =true;
 const visible = true;
+$('#man').hide();
 
+
+$("#file-input").on("change", function (e) {
+  var file = $(this)[0].files[0];
+  var upload = new Upload(file);
+
+  // maby check size or type here with upload.getSize() and upload.getType()
+
+  // execute upload
+  upload.doUpload();
+});
+$('#file-button').click(function(){
+  $('#file-input').click();
+});
 if(!getmotion) $('#accel').hide();
 
 function successLocationListen(pos) {
@@ -133,7 +147,7 @@ demo_button.onclick = function(e) {
   
   /////////////////////////  
   if (is_running){
-    if(getmotion )  window.removeEventListener("devicemotion", handleMotion);
+    window.removeEventListener("devicemotion", handleMotion);
     //window.removeEventListener("deviceorientation", handleOrientation);
     
     document.getElementById("start_demo_txt").innerHTML = "  SAVING TRACK             ";

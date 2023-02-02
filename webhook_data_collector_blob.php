@@ -1,4 +1,5 @@
 <?php
+
 header('Content-type: application/json');
 require 'functions.php';
  
@@ -8,7 +9,7 @@ if( !isset($_POST['uid']) || $_POST['uid']==""){
 }
 
 removeOldFiles($_POST['uid']);
-$dirname = "tmp/". $_POST['uid']   ;
+$dirname = "incoming/geojson/". $_POST['uid']   ;
 
 if( !is_dir($dirname)){
   if(!mkdir($dirname)){  

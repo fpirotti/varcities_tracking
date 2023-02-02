@@ -1,11 +1,8 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 
 <head>
 <meta charset="UTF-8">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
 <title>VARCITIES Geo-Catch</title>
 
 <script type="text/javascript" src="js/zip.min.js"> </script>
@@ -118,7 +115,7 @@
     <div id="geolocContainer" style="padding:10px; background:rgba(25,25,25,0.2);">
         <div  class="row" style="display:none;">
             <div class="col-md-12 slidecontainer">
-               Seconds between two tags: min=0.5, max=60</br>
+               Seconds between two tags: min=0.5, max=60<br>
             <input type="range" id="geoloc_freq" name="geoloc_freq" min="0.5" max="20" step="0.5" value=1 style="margin:15px; width:50%">
             
             <label  for="geoloc_freq" id="geoloc_freq_value" style="font-size:20px; font-weight:900;">0</label>
@@ -148,11 +145,18 @@
         </div>
     </div>
   </div> 
-    <a id="emergency_button" class="btn btn-lg  btn-danger btn-block"   href="#" role="button" style="height:4em;" onclick="">
+    <a class="btn btn-lg  btn-danger btn-block" href="#"
+           id="file-button" role="button" style="height:4em;" type="button">
+        <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="currentColor" class="bi bi-camera" viewBox="0 0 16 16">
+            <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1v6zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2z"/>
+            <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
+        </svg>
+    </a>
+      <input   href="#"
+             id="file-input"  style="display:none;" type="file">
 
-<!--       <img src="img/emergency.png" style="max-width:100%"> -->
-    </a> 
-     <hr>
+
+      <hr>
         <div  class="row" id="man">
             <div class="col-md-12 text-justify">
               This app records positions of the phone at a user-defined frequency and monitors the phone accelerometers 
@@ -171,13 +175,20 @@
               The big red button can be used to send a signal to the server and trigger further actions (e.g. emails or calls). 
           </div>
         </div>
+
+      <div class="progress position-absolute top-50 start-50 translate-middle" style="height: 25px;">
+          <div id="progress-wrpe"  class="progress-bar"
+               role="progressbar" style="width: 25%;"
+               aria-valuenow="25" aria-valuemin="0"
+               aria-valuemax="100">0%</div>
+      </div>
    </div>
 </main>
 
         <!-- Add your site or application content here -->
   
         <script src="js/vendor/jquery-2.1.3.min.js"></script>
-        <script src="js/plugins.js"></script>
+        <script src="js/plugins.js?ajkd"></script>
 
         <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
         <script>
@@ -189,7 +200,7 @@
             ga('create','UA-XXXXX-X');ga('send','pageview');
         </script>
          
-        <script src="js/main.js"></script>
+        <script src="js/main.js?d"></script>
         
 </body>
 
