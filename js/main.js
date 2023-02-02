@@ -37,11 +37,9 @@ $('#man').hide();
 
 $("#file-input").on("change", function (e) {
   var file = $(this)[0].files[0];
+  ///////// upload image ------
   var upload = new Upload(file);
 
-  // maby check size or type here with upload.getSize() and upload.getType()
-
-  // execute upload
   upload.doUpload();
 });
 $('#file-button').click(function(){

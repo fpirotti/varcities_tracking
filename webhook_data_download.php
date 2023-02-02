@@ -61,9 +61,19 @@ try {
         ),
         true
     )) {
-        throw new RuntimeException('Invalid file format.');
+        throw new RuntimeException('Invalid file format, must be an image.');
     }
 
+
+    // GET GEOPOS
+    $imgLocation = get_image_location($imageURL);
+
+    //latitude & longitude
+    $imgLat = $imgLocation['latitude'];
+    $imgLng = $imgLocation['longitude'];;
+    if (false === $imgLocation) {
+        throw new RuntimeException('Geolocation data not found in image! Please check that your image is geotagged.');
+    }
     // You should name it uniquely.
     // DO NOT USE $_FILES['upfile']['name'] WITHOUT ANY VALIDATION !!
     // On this example, obtain safe unique name from its binary data.
@@ -84,5 +94,5 @@ try {
     echo $e->getMessage();
 
 }
-
+echo "Image uploaded successfully to server, Latitude:"  .  $imgLat . " Longitude:". $imgLng ;
 ?>
