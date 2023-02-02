@@ -1,13 +1,22 @@
-#logger{  
+#logger  {
     height:100px;	
     max-height:150px;	
-    overflow-y: scroll;
-	  background-color: rgba(255,255,255,0.2);
+    overflow-y: auto;
+	 background-color: rgba(255,255,255,0.2);
     color:black;
     box-shadow: 0 0 10px #888888;
-    margin-left: 15px;
+    display: none;
 }
 
+#geolocContainer {
+    background-color: rgba(255,255,255,0.2);
+    color:black; padding: 10px;
+    box-shadow: 0 0 10px #888888;
+}
+
+.btn {
+    margin-top: 15px;
+}
 .navbar-toggler-icon{
   background-image: url("data:image/svg+xml;charset=utf8,%3Csvg viewBox='0 0 32 32' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath stroke='rgba(255, 255, 255, 0.5)' stroke-width='2' stroke-linecap='round' stroke-miterlimit='10' d='M4 8h24M4 16h24M4 24h24'/%3E%3C/svg%3E") !important;
   float:right;

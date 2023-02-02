@@ -34,10 +34,13 @@ if(!isset( $_SESSION['startTime']) || $_SESSION['startTime']!=$_POST['startTime'
    $_SESSION["fpath"] = $tmpfname .".csv";
 }
 
-if(!file_put_contents($_SESSION["fpath"],  $_POST['data']['longitude'].'|'.$_POST['data']['latitude'].'|'.round($_POST['data']['accuracy']).PHP_EOL , FILE_APPEND | LOCK_EX) ){
+if(!file_put_contents($_SESSION["fpath"],  $_POST['data']['longitude'].'|'.$_POST['data']['latitude'].'|'.round($_POST['data']['accuracy']).PHP_EOL ,
+      FILE_APPEND | LOCK_EX) ){
     header('Content-type: application/json');
       echo json_encode( array("error"=> " cannot write to file"));
 }
+
+ 
 
 
 

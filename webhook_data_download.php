@@ -1,5 +1,5 @@
 <?php
-
+require 'functions.php';
 header('Content-Type: text/plain; charset=utf-8');
 
 $dirname = "incoming/imgs/". $_POST['uid']   ;
@@ -39,14 +39,14 @@ try {
             throw new RuntimeException('No file sent.');
         case UPLOAD_ERR_INI_SIZE:
         case UPLOAD_ERR_FORM_SIZE:
-        throw new RuntimeException('Exceeded filesize limit.'. round($_FILES['upfile']['size']/1000000, 3) .' MB');
+            throw new RuntimeException( ini_get('upload_max_filesize')  . 'Exceeded filesize limit.'. round($_FILES['upfile']['size']/1000000, 3) .' MB');
         default:
             throw new RuntimeException('Unknown errors.');
     }
 
     // You should also check filesize here.
-    if ($_FILES['upfile']['size'] > 1000000) {
-        throw new RuntimeException('Exceeded filesize limit.'. round($_FILES['upfile']['size']/1000000, 3) .' MB');
+    if ($_FILES['upfile']['size'] > 20000000) {
+        throw new RuntimeException('Exceeded filesize limit (20 MB).'. round($_FILES['upfile']['size']/1000000, 3) .' MB');
     }
 
     // DO NOT TRUST $_FILES['upfile']['mime'] VALUE !!
@@ -66,7 +66,7 @@ try {
 
 
     // GET GEOPOS
-    $imgLocation = get_image_location($imageURL);
+    $imgLocation = get_image_location($_FILES['upfile']['tmp_name']);
 
     //latitude & longitude
     $imgLat = $imgLocation['latitude'];
@@ -77,22 +77,25 @@ try {
     // You should name it uniquely.
     // DO NOT USE $_FILES['upfile']['name'] WITHOUT ANY VALIDATION !!
     // On this example, obtain safe unique name from its binary data.
-    if (!move_uploaded_file(
-        $_FILES['upfile']['tmp_name'],
-        sprintf('%s.%s',
-            $tmpfname,
-            $ext
-        )
-    )) {
+    $tmpfname = sprintf('%s.%s',
+        $tmpfname,
+        $ext
+    );
+    if (!move_uploaded_file( $_FILES['upfile']['tmp_name'],$tmpfname ) ) {
         throw new RuntimeException('Failed to move uploaded file.');
     }
 
-    echo 'File is uploaded successfully.';
+
+    chmod($tmpfname, 0777);
+
+    echo "Image uploaded successfully to server, OPEN IN <a href='https://earth.google.com/web/@"  .  $imgLat . ",".$imgLng."' target='_blank'> " .
+    "Google Earth</a> | " .
+    "<a href='https://www.google.com/maps/search/?api=1&query="  .  $imgLat . ",".$imgLng."' target='_blank'> "  .
+    "Google Maps</a>";
 
 } catch (RuntimeException $e) {
 
     echo $e->getMessage();
 
 }
-echo "Image uploaded successfully to server, Latitude:"  .  $imgLat . " Longitude:". $imgLng ;
 ?>

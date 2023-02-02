@@ -9,6 +9,7 @@ self.addEventListener( "install" , ( event ) =>
 	// cache all required files for offline use
 	event.waitUntil( caches.open( cacheName ).then( ( cache ) =>
 	{
+		console.log( "sw > caching" );
 		return cache.addAll( [
             "/",
 			"config.js",
@@ -22,6 +23,7 @@ self.addEventListener( "install" , ( event ) =>
 			"src/main.js",
 			"js/vendor/modernizr-2.8.3.min.js",
 			"js/vendor/jquery-2.1.3.min.js",
+			"js/jquery.exif.js",
 			"js/plugins.js", 
 			"js/main.js",
 			"img/favicon.ico",

@@ -66,7 +66,9 @@ $tmpfnamez = $tmpfname .".zip";
               echo json_encode( array("error"=> " File in server not save correctly.")); 
               exit(-1); 
     }
- 
+
+chmod($tmpfnamez, 0777);
+
 echo json_encode( array("success"=>basename($tmpfnamez) ));
 
 ?>

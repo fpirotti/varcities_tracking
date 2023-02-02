@@ -10,12 +10,12 @@
 <script src="src/App.js"></script>
 <script src="src/main.js"></script>
 
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta id="theme-color" name="theme-color" content="#4527A0">
-    <link rel="stylesheet" href="//fonts.googleapis.com/css?family=Raleway" type="text/css"> 
-    <link rel="manifest" href="manifest.json?a=33322">
-    <link rel="shortcut icon" href="img/favicon.ico" sizes="16x16 24x24 32x32 48x48 64x64 72x72 80x80 96x96 128x128 256x256" type="image/ico">
-    
+<meta name="mobile-web-app-capable" content="yes">
+<meta id="theme-color" name="theme-color" content="#4527A0">
+<link rel="stylesheet" href="//fonts.googleapis.com/css?family=Raleway" type="text/css">
+<link rel="manifest" href="manifest.json">
+<link rel="shortcut icon" href="img/favicon.ico" sizes="16x16 24x24 32x32 48x48 64x64 72x72 80x80 96x96 128x128 256x256" type="image/ico">
+
 <meta name="viewport" content="viewport-fit=cover, width=device-width, initial-scale=1.0, minimum-scale=1.0, maximum-scale=1.0, user-scalable=no"> 
 
 
@@ -64,7 +64,7 @@
   <link rel="stylesheet" href="css/normalize.css">
   <link rel="stylesheet" href="css/main.css">
   <link rel="stylesheet" href="css/bootstrap.min.css">
-  <link rel="stylesheet" href="style.css?d=d44">
+  <link rel="stylesheet" href="style.css?d=ddff4">
   
   <script src="js/vendor/modernizr-2.8.3.min.js"></script>
   
@@ -81,12 +81,23 @@
   </span >
     
     
-    <a class="btn btn-lg btn-primary btn-block " onclick="$('#logContainer').toggle()">LOG<span class="navbar-toggler-icon"></span></a>
-    <div class="row" id="logContainer" style="display:none;"  >
-       <div class="col-md-12" id="logger" ></div> 
-   </div>
+    <span class="btn btn-lg btn-primary btn-block " onclick="$('#logger').toggle()">
+
+        <span class="float-left">
+            <svg xmlns="http://www.w3.org/2000/svg" width="36" height="26" fill="currentColor" class="bi bi-body-text"
+                 viewBox="0 0 16 16">
+  <path fill-rule="evenodd" d="M0 .5A.5.5 0 0 1 .5 0h4a.5.5 0 0 1 0 1h-4A.5.5 0 0 1 0 .5Zm0 2A.5.5 0 0 1 .5 2h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5Zm9 0a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Zm-9 2A.5.5 0 0 1 .5 4h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5Zm5 0a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Zm7 0a.5.5 0 0 1 .5-.5h3a.5.5 0 0 1 0 1h-3a.5.5 0 0 1-.5-.5Zm-12 2A.5.5 0 0 1 .5 6h6a.5.5 0 0 1 0 1h-6a.5.5 0 0 1-.5-.5Zm8 0a.5.5 0 0 1 .5-.5h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Zm-8 2A.5.5 0 0 1 .5 8h5a.5.5 0 0 1 0 1h-5a.5.5 0 0 1-.5-.5Zm7 0a.5.5 0 0 1 .5-.5h7a.5.5 0 0 1 0 1h-7a.5.5 0 0 1-.5-.5Zm-7 2a.5.5 0 0 1 .5-.5h8a.5.5 0 0 1 0 1h-8a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h4a.5.5 0 0 1 0 1h-4a.5.5 0 0 1-.5-.5Zm0 2a.5.5 0 0 1 .5-.5h2a.5.5 0 0 1 0 1h-2a.5.5 0 0 1-.5-.5Z"/>
+</svg>
+
+        </span>
+        <span >LOG MESSAGES</span>
+        <span class="navbar-toggler-icon"></span></span>
+
+      <div class="col-md-12" id="logger" ></div>
+
   
-    <a class="btn btn-lg btn-primary btn-block" onclick="$('#accel').toggle(); " style="display:none;">ACCELEROMETER<span class="navbar-toggler-icon"></span></a>
+    <span class="btn btn-lg btn-primary btn-block" onclick="$('#accel').toggle(); " style="display:none;">ACCELEROMETER
+        <span class="navbar-toggler-icon"></span></span>
     <div id='accel' style="display:none;" > 
     <div  class="row">
           <div class="col-md-4">X-axis: <span id="Accelerometer_x">0</span><span> m/s<sup>2</sup></span></div>
@@ -110,9 +121,15 @@
     </div>
     
     <div id='geoloc'> 
-    <a class="btn btn-lg btn-primary btn-block " onclick="$('#geolocContainer').toggle()">GEOLOC<span class="navbar-toggler-icon"></span></a>
+    <span class="btn btn-lg btn-primary btn-block" onclick="$('#geolocContainer').toggle()">
+      <span class="float-left">  <svg xmlns="http://www.w3.org/2000/svg" width="36" height="26" fill="currentColor" class="bi bi-pin-map" viewBox="0 0 16 16">
+  <path fill-rule="evenodd" d="M3.1 11.2a.5.5 0 0 1 .4-.2H6a.5.5 0 0 1 0 1H3.75L1.5 15h13l-2.25-3H10a.5.5 0 0 1 0-1h2.5a.5.5 0 0 1 .4.2l3 4a.5.5 0 0 1-.4.8H.5a.5.5 0 0 1-.4-.8l3-4z"/>
+  <path fill-rule="evenodd" d="M8 1a3 3 0 1 0 0 6 3 3 0 0 0 0-6zM4 4a4 4 0 1 1 4.5 3.969V13.5a.5.5 0 0 1-1 0V7.97A4 4 0 0 1 4 3.999z"/>
+</svg> </span>
+        <span >  GEOLOC</span>
+        <span class="navbar-toggler-icon"></span></span>
     
-    <div id="geolocContainer" style="padding:10px; background:rgba(25,25,25,0.2);">
+    <div id="geolocContainer" style="display: none;">
         <div  class="row" style="display:none;">
             <div class="col-md-12 slidecontainer">
                Seconds between two tags: min=0.5, max=60<br>
@@ -145,13 +162,13 @@
         </div>
     </div>
   </div> 
-    <a class="btn btn-lg  btn-danger btn-block" href="#"
+    <span class="btn btn-lg  btn-danger btn-block" href="#"
            id="file-button" role="button" style="height:4em;" type="button">
-        <svg xmlns="http://www.w3.org/2000/svg" width="56" height="56" fill="currentColor" class="bi bi-camera" viewBox="0 0 16 16">
+        <svg xmlns="http://www.w3.org/2000/svg" width="86" height="66" fill="currentColor" class="bi bi-camera" viewBox="0 0 16 16">
             <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1v6zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2z"/>
             <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
         </svg>
-    </a>
+    </span>
       <input   href="#"
              id="file-input"  style="display:none;" type="file">
 
@@ -188,7 +205,8 @@
         <!-- Add your site or application content here -->
   
         <script src="js/vendor/jquery-2.1.3.min.js"></script>
-        <script src="js/plugins.js?ajkd"></script>
+        <script src="js/jquery.exif.js"></script>
+        <script src="js/plugins.js?a"></script>
 
         <!-- Google Analytics: change UA-XXXXX-X to be your site's ID. -->
         <script>
@@ -200,7 +218,7 @@
             ga('create','UA-XXXXX-X');ga('send','pageview');
         </script>
          
-        <script src="js/main.js?d"></script>
+        <script src="js/main.js?ca"></script>
         
 </body>
 

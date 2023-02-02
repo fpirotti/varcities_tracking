@@ -67,10 +67,12 @@ updateLogger = function(text, idlogger='logger', newline=true){
 }
 
 updateLoggerErr = function(text, idlogger='logger', newline=true){
+    $('#'+idlogger ).show();
     updateLogger("<span style='color:red'>"+text+"</span>", idlogger, newline);
 }
  
 updateLoggerWarn = function(text, idlogger='logger', newline=true){
+    $('#'+idlogger ).show();
     updateLogger("<span style='color:orange'>"+text+"</span>", idlogger, newline);
 }
  
@@ -182,7 +184,7 @@ Upload.prototype.doUpload = function () {
         },
 
         success: function (data) {
-            console.log(data);
+            updateLoggerErr(data);
             // your callback here
         },
         error: function (error) {
@@ -210,3 +212,69 @@ Upload.prototype.progressHandling = function (event) {
     $(progress_bar_id + " .progress-bar").css("width", +percent + "%");
     $(progress_bar_id + " .progress-bar").text(percent + "%");
 };
+function updateFieldIfNotNull(fieldName, value, precision=10, force=false){
+    if(force) {
+        document.getElementById(fieldName).innerHTML = value.toFixed(precision);
+    } else {
+        if (value != null && visible)
+            document.getElementById(fieldName).innerHTML = value.toFixed(precision);
+    }
+};
+
+
+function handleOrientation(event) {
+    updateFieldIfNotNull('Orientation_a', event.alpha);
+    updateFieldIfNotNull('Orientation_b', event.beta);
+    updateFieldIfNotNull('Orientation_g', event.gamma);
+    // incrementEventCount();
+}
+
+function incrementEventCount(){
+    let counterElement = document.getElementById("num-observed-events")
+    let eventCount = parseInt(counterElement.innerHTML)
+    counterElement.innerHTML = eventCount + 1;
+}
+
+
+function handleMotion(event) {
+    updateFieldIfNotNull('Accelerometer_x', event.acceleration.x);
+    updateFieldIfNotNull('Accelerometer_y', event.acceleration.y);
+    updateFieldIfNotNull('Accelerometer_z', event.acceleration.z);
+    var mm = event.acceleration.x+event.acceleration.y+event.acceleration.z;
+    if(maxacc<mm){
+        maxacc=mm;
+        updateFieldIfNotNull('Accelerometer_max',mm, 2,   true);
+    }
+    updateFieldIfNotNull('Accelerometer_i', event.interval, 2);
+
+//  incrementEventCount();
+}
+
+
+function successLocationListen(pos) {
+    const crd = pos.coords;
+    surveys[startTime]['x'].push(crd.longitude);
+    surveys[startTime]['y'].push(crd.latitude);
+    surveys[startTime]['a'].push(crd.accuracy);
+
+    coordCounter=coordCounter+1;
+    if(realTime){
+        sendRTdata(uid, startTime, crd);
+    }
+    if(visible){
+        updateFieldIfNotNull('geoloc_lat', crd.latitude, 8);
+        updateFieldIfNotNull('geoloc_lng', crd.longitude, 8);
+        updateFieldIfNotNull('geoloc_acc', crd.accuracy, 1);
+        updateFieldIfNotNull('geoloc_n', coordCounter, 0);
+    }
+}
+
+
+function errorLocationListen(e) {
+    document.getElementById("start_demo_txt").innerHTML = "     START TRACKING         ";
+    demo_button.classList.add('btn-success');
+    demo_button.classList.remove('btn-warning');
+    demo_button.classList.remove('btn-danger');
+    document.getElementById("spinner").classList.add('invisible');
+    alert(e.message + " - tracking will be stopped. App will not work without Location access.");
+}
