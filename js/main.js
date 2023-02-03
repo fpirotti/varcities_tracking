@@ -5,19 +5,27 @@ if (localStorage.getItem("uid") === null) {
 const uid = localStorage.getItem('uid'); //returns 4587ff526d
 var startTime;
 
-
 const options = {
     enableHighAccuracy: true,
-    timeout: 5000,
+    timeout: 60000,
     maximumAge: 0
 };
+
+var utf8EncodedString = new TextEncoder("utf-8").encode(uid);
+const buffer = new ArrayBuffer(10+8+4+4+4+4); // 10=uid, 8=starttime timestamp long uint, 4x4 are lat long acc elapsed time
+
+const uidBuff = new Uint8Array(buffer, 24, 10);
+const starTimeBuff = new BigUint64Array(buffer, 0, 1);
+const dataBuff = new Uint32Array(buffer, 8, 4);
+uidBuff.set(utf8EncodedString);
+
 let interval = null;
 let coordCounter = 0;
 let maxacc = 0;
 
 var N = 10;
 
-let locationData = {x: [], y: [], a: [], st: 0, fp: 0};
+let locationData = {x: [], y: [], a: [], time:[], st: 0, fp: 0};
 let surveys = {};
 const geojson = {
     "type": "FeatureCollection",
@@ -28,7 +36,8 @@ let accthreshold = document.getElementById('accthresh');
 updateLogger("Welcome, your unique id is: " + uid, 'logger', newline = false);
 const getmotion = false;
 const getlocation = true;
-const realTime = true;
+const maxNumCoords =  60*60*6; // six hours max
+var realTime = true;
 let realTimeOk = true;
 let isWakeSupported = false;
 const visible = true;
@@ -73,7 +82,7 @@ $("#file-input").on("input", function (e) {
 $('#file-button').click(function () {
     $('#file-input').click();
 });
-if (!getmotion) $('#accel').hide();
+if (!getmotion) $('#accelContainer').hide();
 
 
 var slider = document.getElementById("accthresh");
@@ -93,8 +102,9 @@ slider2.oninput = function () {
 }
 
 
-let is_running = false;
-let demo_button = document.getElementById("start_demo");
+let is_running = 10;
+let start_tracking_button = document.getElementById("start_demo");
+let start_tracking_button_txt = document.getElementById("start_demo_txt");
 var isLocationEnabled = false;
 navigator.permissions.query({name:'geolocation'}).then((result) => {
 
@@ -118,78 +128,67 @@ navigator.permissions.query({name:'geolocation'}).then((result) => {
     };
 });
 /////////////////////////
-demo_button.onclick = function (e) {
+start_tracking_button.onclick = function (e) {
     e.preventDefault();
-
+    is_running++;
+    if(is_running > 2) {
+        is_running = 0;
+    }
     if(!isLocationEnabled){
+        clearInterval(interval);
+        is_running = 0;
         updateLoggerErr("Please reactivate location permissions, otherwise the app will not work!");
         return(0);
     }
+    
+    
     if (is_running) {
 
-        wakeLock.release()
-            .then(() => {
-                wakeLock = null;
-                updateLogger("Wakelock released");
-            });
-
-        window.removeEventListener("devicemotion", handleMotion);
-        //window.removeEventListener("deviceorientation", handleOrientation);
-
-        document.getElementById("start_demo_txt").innerHTML = "  SAVING TRACK             ";
-        demo_button.classList.add('btn-warning');
-        demo_button.classList.remove('btn-danger');
-
-        updateLogger("Stopped recording... saving file");
-
         clearInterval(interval);
-        is_running = false;
+        
 
-        var geojson2 = geojson;
-        for (var i = 0; i < surveys[startTime]['x'].length; i++) {
-            geojson2.features.push({
-                "type": "Feature",
-                "geometry": {"type": "Point", "coordinates": [surveys[startTime]['x'][i], surveys[startTime]['y'][i]]},
-                "properties": {"ac": surveys[startTime]['a'][i]}
-            });
-        }
-        //var bb = new Blob([JSON.stringify(geojson2) ], { type: 'application/geo+json' });
-//       var bb = new Blob([JSON.stringify(geojson2) ], { type: 'application/geo+json' });
-        getZipFileBlob().then(downloadFile);
 
-        async function getZipFileBlob() {
-            const zipWriter = new zip.ZipWriter(new zip.BlobWriter("application/octet-stream"));
-            await Promise.all([
-                zipWriter.add(startDate.yyyymmdd() + '.geojson', new zip.TextReader(JSON.stringify(geojson2)))
-            ]);
-            return zipWriter.close();
-        }
+        if(is_running==1){
 
-        function downloadFile(blob) {
-            sendBlobData(uid, startTime, blob);
-            var newa = Object.assign(document.createElement("a"), {
-                download: startDate.yyyymmdd() + '.zip',
-                href: URL.createObjectURL(blob),
-                textContent: "==>> " + startDate.yyyymmdd() + '.zip <<==',
-                style: 'text-align:center; display: block; color:red;font-weight:900;'
-            });
-            $('#logger').append(newa);
-            $('#logger').show();
-            var objDiv = document.getElementById("logger");
-            objDiv.scrollTop = objDiv.scrollHeight + 10;
+            if(wakeLock) wakeLock.release()
+                .then(() => {
+                    wakeLock = null;
+                    updateLogger("Wakelock released");
+                });
 
-            document.getElementById("start_demo_txt").innerHTML = "     START TRACKING         ";
-            demo_button.classList.add('btn-success');
-            demo_button.classList.remove('btn-warning');
+            window.removeEventListener("devicemotion", handleMotion);
+            //window.removeEventListener("deviceorientation", handleOrientation);
+
+            start_tracking_button_txt.innerHTML = "  SAVING TRACK             ";
+            start_tracking_button.classList.add('btn-warning');
+            start_tracking_button.classList.remove('btn-danger');
+
+            updateLogger("Stopped recording... saving file");
+
+
+            var geojson2 = geojson;
+            for (var i = 0; i < surveys[startTime]['x'].length; i++) {
+                const dd = new Date( surveys[startTime]['time'][i] );
+                geojson2.features.push({
+                    "type": "Feature",
+                    "geometry": {"type": "Point", "coordinates": [surveys[startTime]['x'][i], surveys[startTime]['y'][i]]},
+                    "properties": {"ac": surveys[startTime]['a'][i], "timestamp":String( dd.toJSON()) }
+                });
+            }
+
+            getZipFileBlob(geojson2).then(uploadGeoJSONblob);
+        } else {
+            start_tracking_button_txt.innerHTML = "     START TRACKING         ";
+            start_tracking_button.classList.add('btn-success');
+            start_tracking_button.classList.remove('btn-warning');
+            start_tracking_button.classList.remove('btn-danger');
             document.getElementById("spinner").classList.add('invisible');
-            alert("GeoJSON file ready for download in log panel.");
         }
-
 
     } else {
 
-        updateLogger("Starting tracking");
-
+        updateLogger("Starting to track");
+        coordCounter = 0;
         try {
             wakeLock =   navigator.wakeLock.request('screen').then(
                 function(prom){
@@ -203,19 +202,19 @@ demo_button.onclick = function (e) {
         }
         if (getmotion) window.addEventListener("devicemotion", handleMotion);
         //window.addEventListener("deviceorientation", handleOrientation);
-        document.getElementById("start_demo_txt").innerHTML = "      STOP TRACKING         ";
+        start_tracking_button_txt.innerHTML = "      STOP TRACKING         ";
         document.getElementById("spinner").classList.remove('invisible');
-        demo_button.classList.remove('btn-success');
-        demo_button.classList.add('btn-danger');
+        start_tracking_button.classList.remove('btn-success');
+        start_tracking_button.classList.add('btn-danger');
 
         startDate = new Date();
         startTime = Date.now();
+        starTimeBuff[0] = BigInt(startTime);
         surveys[startTime] = locationData;
 
         interval = setInterval(function () {
             navigator.geolocation.getCurrentPosition(successLocationListen, errorLocationListen, options);
         }, parseFloat(document.getElementById('geoloc_freq').value) * 1000);
 
-        is_running = true;
     }
 };

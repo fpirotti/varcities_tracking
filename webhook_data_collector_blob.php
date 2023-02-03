@@ -12,7 +12,7 @@ removeOldFiles($_POST['uid']);
 $dirname = "incoming/geojson/". $_POST['uid']   ;
 
 if( !is_dir($dirname)){
-  if(!mkdir($dirname)){  
+  if(!mkdir($dirname, 0777, True)){
     echo json_encode( array("error"=>$dirname. " not able to create this directory."));
     exit(-1);
   }

@@ -75,7 +75,27 @@ updateLoggerWarn = function(text, idlogger='logger', newline=true){
     $('#'+idlogger ).show();
     updateLogger("<span style='color:orange'>"+text+"</span>", idlogger, newline);
 }
- 
+
+updateLoggerAlert = function(text, typeAlert=0){
+    var tt = "alert-primary";
+    if(typeAlert===1) {
+        updateLogger( text ); tt = "alert-success";
+    }
+    if(typeAlert===2) {
+        updateLoggerWarn( text ); tt = "alert-warning";
+    }
+    if(typeAlert===3) {
+        updateLoggerErr( text ); tt = "alert-danger";
+    }
+    var alert = document.createElement("div");
+    alert.className = `alert ${tt}`;
+    //alert.id = "alertID";
+    alert.textContent = text;
+    alert.addEventListener('click', function(){ $(this).fadeOut(400) });
+    document.getElementById('mainTAG').appendChild(alert);
+    alert.style.marginTop = "1rem";
+    setTimeout( function(){ $(alert).remove() }, 10000);
+}
 
 saveToLocalStorage = function(uid, startTime, blob){
      var blobs =   localStorage.getItem("blobs") ;
@@ -107,43 +127,64 @@ sendBlobData = function(uid, startTime, blob){
         type: 'POST',
         url: 'https://www.cirgeo.unipd.it/varcities/webhook_data_collector_blob.php',
         data: data, 
-         contentType: false,
+        contentType: false,
         processData: false,
         success: function(data) { 
-          //updateLoggerWarn("Server  available - data sent.");
+          //updateLogger("Server  available - data sent.");
         },    
         error: function() {
-          updateLoggerWarn("Server is not available - data stored locally. If this is unexpected, contact the developer.");
+          start_tracking_button.click();
           saveToLocalStorage(uid, startTime, blob);
-          alert("Server is not available - data stored locally.");
+          updateLoggerAlert("Server is not available - data stored locally. If this is unexpected, contact the developer.", 3);
         }
     });
     
  
-    promise.success(function(data){ 
-        if(data.error!==undefined){ 
-          updateLoggerErr(data.error);
-          alert(data.error);
-        }  
+    promise.success(function(data){
+
+        start_tracking_button.click();
+        if(data.error!==undefined){
+          updateLoggerAlert("Error uploading GeoJSON to server: "+data.error, 3);
+        }  else {
+            updateLoggerAlert("GeoJSON successfully uploaded to server.", 0);
+        }
+
+
      });
     
 }
 
 
 sendRTdata = function(uid, startTime, crd){
-          
+
+    //var formData = new FormData();
+    dataBuff[0]=crd.time;
+    dataBuff[1]=crd.longitude*1000000;
+    dataBuff[2]=crd.latitude*1000000;
+    dataBuff[3]=crd.accuracy*100;
+
+
+
    var promise =   $.ajax({
         type: 'POST',
         url: 'https://www.cirgeo.unipd.it/varcities/webhook_data_collector_rt.php',
-        data: { uid:uid, startTime:startTime, data:crd}, 
         error: function (x, e) {
-          realTimeOk=false;
-        }
+            updateLoggerErr(e.message + " - error on real time update, will terminate real time streaming.");
+           realTimeOk=false;
+        },
+
+      // async: true,
+       contentType: 'application/octet-stream',
+       data: buffer,
+      // cache: false,
+       processData: false,
+       timeout: 60000
     });
     
  
     promise.success(function(data){ 
-        if(data.error!==undefined){ 
+        if(data.error!==undefined){
+            updateLoggerErr(data.error+ " - error on real time update response, will terminate real time streaming.");
           realTimeOk=false;
         } 
      });
@@ -188,7 +229,8 @@ Upload.prototype.doUpload = function () {
             // your callback here
         },
         error: function (error) {
-            alert(error);
+            updateLoggerErr(error.message);
+            alert(error.message);
             // handle error
         },
         async: true,
@@ -237,31 +279,45 @@ function incrementEventCount(){
 
 
 function handleMotion(event) {
-    updateFieldIfNotNull('Accelerometer_x', event.acceleration.x);
-    updateFieldIfNotNull('Accelerometer_y', event.acceleration.y);
-    updateFieldIfNotNull('Accelerometer_z', event.acceleration.z);
+    if($('#accelContainer').is(':visible') ){
+        updateFieldIfNotNull('Accelerometer_x', event.acceleration.x);
+        updateFieldIfNotNull('Accelerometer_y', event.acceleration.y);
+        updateFieldIfNotNull('Accelerometer_z', event.acceleration.z);
+    }
+
     var mm = event.acceleration.x+event.acceleration.y+event.acceleration.z;
     if(maxacc<mm){
         maxacc=mm;
-        updateFieldIfNotNull('Accelerometer_max',mm, 2,   true);
+        if($('#accelContainer').is(':visible') ) {
+            updateFieldIfNotNull('Accelerometer_max',mm, 2,   true);
+        }
     }
-    updateFieldIfNotNull('Accelerometer_i', event.interval, 2);
+    if($('#accelContainer').is(':visible') ){
+        updateFieldIfNotNull('Accelerometer_i', event.interval, 2);
+    }
 
 //  incrementEventCount();
 }
 
 
 function successLocationListen(pos) {
+    if(coordCounter > maxNumCoords){
+        start_tracking_button.click();
+        var msg = "Max number of coordinates reached ("+maxNumCoords+"), will stop!";
+        updateLoggerErr(msg);
+    }
     const crd = pos.coords;
+    crd.time = Date.now() - startTime;
     surveys[startTime]['x'].push(crd.longitude);
     surveys[startTime]['y'].push(crd.latitude);
     surveys[startTime]['a'].push(crd.accuracy);
+    surveys[startTime]['time'].push(crd.time);
 
     coordCounter=coordCounter+1;
     if(realTime){
         sendRTdata(uid, startTime, crd);
     }
-    if(visible){
+    if(visible && $('#geolocContainer').is(':visible') ){
         updateFieldIfNotNull('geoloc_lat', crd.latitude, 8);
         updateFieldIfNotNull('geoloc_lng', crd.longitude, 8);
         updateFieldIfNotNull('geoloc_acc', crd.accuracy, 1);
@@ -271,10 +327,36 @@ function successLocationListen(pos) {
 
 
 function errorLocationListen(e) {
-    document.getElementById("start_demo_txt").innerHTML = "     START TRACKING         ";
-    demo_button.classList.add('btn-success');
-    demo_button.classList.remove('btn-warning');
-    demo_button.classList.remove('btn-danger');
-    document.getElementById("spinner").classList.add('invisible');
-    alert(e.message + " - tracking will be stopped. App will not work without Location access.");
+    is_running = 11; // anothing above 2 will trigger 0
+
+    var msg  =e.message + " ... tracking will be stopped. App will not work without Location access, please check your phone settings.";
+    updateLoggerErr(msg);
+    alert(msg);
+}
+
+
+
+async function getZipFileBlob(geojson2) {
+    const zipWriter = new zip.ZipWriter(new zip.BlobWriter("application/octet-stream"));
+    await Promise.all([
+        zipWriter.add(startDate.yyyymmdd() + '.geojson', new zip.TextReader(JSON.stringify(geojson2)))
+    ]);
+    return zipWriter.close();
+}
+
+function uploadGeoJSONblob(blob) {
+    updateLoggerAlert("GeoJSON saved in device.", 1);
+    var newa = Object.assign(document.createElement("a"), {
+        download: startDate.yyyymmdd() + '.zip',
+        href: URL.createObjectURL(blob),
+        textContent: "==>> " + startDate.yyyymmdd() + '.zip <<==',
+        style: 'text-align:center; display: block; color:red;font-weight:900;'
+    });
+    $('#logger').append(newa);
+    $('#logger').show();
+    var objDiv = document.getElementById("logger");
+    objDiv.scrollTop = objDiv.scrollHeight + 10;
+
+
+    sendBlobData(uid, startTime, blob);
 }
