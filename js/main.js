@@ -7,7 +7,7 @@ var startTime;
 
 const options = {
     enableHighAccuracy: true,
-    timeout: 60000,
+    timeout: 1000,
     maximumAge: 0
 };
 
@@ -17,6 +17,8 @@ const buffer = new ArrayBuffer(10+8+4+4+4+4); // 10=uid, 8=starttime timestamp l
 const uidBuff = new Uint8Array(buffer, 24, 10);
 const starTimeBuff = new BigUint64Array(buffer, 0, 1);
 const dataBuff = new Uint32Array(buffer, 8, 4);
+// buffer for data size of 1000, if count is more,
+var dataTotBuff = new Uint32Array(1000);
 uidBuff.set(utf8EncodedString);
 
 let interval = null;
@@ -38,7 +40,7 @@ const getmotion = false;
 const getlocation = true;
 const maxNumCoords =  60*60*6; // six hours max
 var realTime = true;
-let realTimeOk = true;
+
 let isWakeSupported = false;
 const visible = true;
 $('#man').hide();
@@ -53,6 +55,23 @@ if ('wakeLock' in navigator) {
 } else {
     updateLoggerWarn('Wake lock is not supported by this browser.');
 }
+
+// event listener when going online
+window.addEventListener( "online" , ( event ) =>
+{
+    console.log( "online event" );
+    isOnline=true;
+    updateLoggerAlert("You are online! ", 3);
+    //updateLogger("You are online");
+});
+// event listener when going offline
+window.addEventListener( "offline" , ( event ) =>
+{
+    console.log( "offline event" );
+    isOnline=false;
+    updateLoggerAlert("You are offline! Real time data will not be streamed", 3);
+});
+
 $("#file-input").on("input", function (e) {
     var file = $(this)[0].files[0];
     ///////// upload image ------
@@ -135,7 +154,8 @@ start_tracking_button.onclick = function (e) {
         is_running = 0;
     }
     if(!isLocationEnabled){
-        clearInterval(interval);
+        navigator.geolocation.clearWatch(interval);
+        //clearInterval(interval);
         is_running = 0;
         updateLoggerErr("Please reactivate location permissions, otherwise the app will not work!");
         return(0);
@@ -144,9 +164,7 @@ start_tracking_button.onclick = function (e) {
     
     if (is_running) {
 
-        clearInterval(interval);
-        
-
+        navigator.geolocation.clearWatch(interval);
 
         if(is_running==1){
 
@@ -159,24 +177,29 @@ start_tracking_button.onclick = function (e) {
             window.removeEventListener("devicemotion", handleMotion);
             //window.removeEventListener("deviceorientation", handleOrientation);
 
-            start_tracking_button_txt.innerHTML = "  SAVING TRACK             ";
-            start_tracking_button.classList.add('btn-warning');
-            start_tracking_button.classList.remove('btn-danger');
+            if( coordCounter > 0){
+                start_tracking_button_txt.innerHTML = "  SAVING TRACK             ";
+                start_tracking_button.classList.add('btn-warning');
+                start_tracking_button.classList.remove('btn-danger');
 
-            updateLogger("Stopped recording... saving file");
+                updateLogger("Stopped recording... saving file");
 
 
-            var geojson2 = geojson;
-            for (var i = 0; i < surveys[startTime]['x'].length; i++) {
-                const dd = new Date( surveys[startTime]['time'][i] );
-                geojson2.features.push({
-                    "type": "Feature",
-                    "geometry": {"type": "Point", "coordinates": [surveys[startTime]['x'][i], surveys[startTime]['y'][i]]},
-                    "properties": {"ac": surveys[startTime]['a'][i], "timestamp":String( dd.toJSON()) }
-                });
+                var geojson2 = JSON.parse(JSON.stringify(geojson));
+                for (var i = 0; i < coordCounter; i++) {
+                    const dd = new Date( startTime + dataTotBuff[i*4] );
+                    geojson2.features.push({
+                        "type": "Feature",
+                        "geometry": {"type": "Point", "coordinates": [ dataTotBuff[i*4+1]/1000000, dataTotBuff[i*4+2]/1000000 ]},
+                        "properties": {"ac": dataTotBuff[i*4+3]/100, "timestamp":String( dd.toJSON()) }
+                    });
+                }
+
+                sendGeoJsonBlobDataToServerBuff(uid, startTime, dataTotBuff.slice(0, (coordCounter*4)));
+                getZipFileBlob(geojson2).then(uploadGeoJSONblob);
             }
+            start_tracking_button.click();
 
-            getZipFileBlob(geojson2).then(uploadGeoJSONblob);
         } else {
             start_tracking_button_txt.innerHTML = "     START TRACKING         ";
             start_tracking_button.classList.add('btn-success');
@@ -198,7 +221,7 @@ start_tracking_button.onclick = function (e) {
 
             updateLogger('Wake Lock is active!');
         } catch (err) {
-            updateLogger( `${err.name}, ${err.message}`);
+            updateLogger( `Wke lock error ${err.name}, ${err.message}`);
         }
         if (getmotion) window.addEventListener("devicemotion", handleMotion);
         //window.addEventListener("deviceorientation", handleOrientation);
@@ -211,10 +234,8 @@ start_tracking_button.onclick = function (e) {
         startTime = Date.now();
         starTimeBuff[0] = BigInt(startTime);
         surveys[startTime] = locationData;
-
-        interval = setInterval(function () {
-            navigator.geolocation.getCurrentPosition(successLocationListen, errorLocationListen, options);
-        }, parseFloat(document.getElementById('geoloc_freq').value) * 1000);
-
+        interval = navigator.geolocation.watchPosition(successLocationListen, errorLocationListen, options);
     }
 };
+
+updateLoggerAlert("You are using version " + serviceWorkerCacheVersion);

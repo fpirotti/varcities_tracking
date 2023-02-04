@@ -13,8 +13,26 @@ function removeOldFiles($uid)
     }
   }
 }
- 
-function creageGeoJSON($data, $tmpfname=False){
+
+function createGeoJSON2($data, $tmpfname=False){
+
+    $fin=array();
+    $tracks = count($data)/4;
+    for ($x = 1; $x < ($tracks+1) ; $x++) {
+        $fin[]='{ "type": "Feature",
+        "geometry": {"type": "Point", "coordinates": [ '.  $data[$x*4+1].  ',   '.  $data[$x*4+2].  '  ]},
+        "properties": {"ac":  '.  $data[$x*4+3].  ', "time":'. $data[$x*4].'}
+    }'. PHP_EOL;
+}
+$geojson = '{ "type": "FeatureCollection",
+"features": [ '.  implode(',
+    ', $fin)  .' ]
+}' ;
+
+if($tmpfname ) file_put_contents($tmpfname,   $geojson);
+return($geojson);
+}
+function createGeoJSON($data, $tmpfname=False){
     
     $fin=array();
     for ($x = 0; $x < count($data['y']); $x++) {

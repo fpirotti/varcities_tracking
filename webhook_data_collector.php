@@ -32,7 +32,7 @@ $tmpfnamez = $tmpfname .".zip";
 $tmpfname = $tmpfname .".geojson";
  
 
-creageGeoJSON($_POST['data'], $tmpfname);
+createGeoJSON($_POST['data'], $tmpfname);
 
  
 // $fin="";

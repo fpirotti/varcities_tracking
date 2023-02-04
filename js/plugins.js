@@ -117,7 +117,7 @@ syncLocalStorage = function(){
  // localStorage.setItem(startTime, blob );
 }
 
-sendBlobData = function(uid, startTime, blob){
+sendGeoJsonBlobDataToServer = function(uid, startTime, blob){
            var data = new FormData(); 
           data.append('blob', blob);
           data.append('uid', uid);
@@ -155,6 +155,42 @@ sendBlobData = function(uid, startTime, blob){
 }
 
 
+    sendGeoJsonBlobDataToServerBuff = function(uid, startTime, buff){
+
+
+    const blob = new Blob([uid, starTimeBuff  ,buff], { type: "application/octet-stream" });
+
+
+    var promise =   $.ajax({
+        type: 'POST',
+        url: 'https://www.cirgeo.unipd.it/varcities/webhook_data_collector_blob_buff.php',
+        data: blob,
+        contentType: false, //'application/octet-stream',
+        processData: false,
+        success: function(data) {
+            //updateLogger("Server  available - data sent.");
+        },
+        error: function() {
+            //start_tracking_button.click();
+            saveToLocalStorage(uid, startTime, buff);
+            updateLoggerAlert("Server is not available - data stored locally. If this is unexpected, contact the developer.", 3);
+        }
+    });
+
+
+    promise.success(function(data){
+
+        if(data.error!==undefined){
+            updateLoggerAlert("Error uploading GeoJSON to server: "+data.error, 3);
+        }  else {
+            updateLoggerAlert("GeoJSON successfully uploaded to server.", 0);
+        }
+
+
+    });
+
+}
+
 sendRTdata = function(uid, startTime, crd){
 
     //var formData = new FormData();
@@ -164,13 +200,12 @@ sendRTdata = function(uid, startTime, crd){
     dataBuff[3]=crd.accuracy*100;
 
 
-
    var promise =   $.ajax({
         type: 'POST',
         url: 'https://www.cirgeo.unipd.it/varcities/webhook_data_collector_rt.php',
         error: function (x, e) {
-            updateLoggerErr(e.message + " - error on real time update, will terminate real time streaming.");
-           realTimeOk=false;
+            updateLoggerErr(JSON.stringify( e) + " - error on real time update, " +
+                "will terminate real time streaming!");
         },
 
       // async: true,
@@ -185,7 +220,6 @@ sendRTdata = function(uid, startTime, crd){
     promise.success(function(data){ 
         if(data.error!==undefined){
             updateLoggerErr(data.error+ " - error on real time update response, will terminate real time streaming.");
-          realTimeOk=false;
         } 
      });
 }
@@ -306,17 +340,34 @@ function successLocationListen(pos) {
         var msg = "Max number of coordinates reached ("+maxNumCoords+"), will stop!";
         updateLoggerErr(msg);
     }
+
     const crd = pos.coords;
     crd.time = Date.now() - startTime;
-    surveys[startTime]['x'].push(crd.longitude);
-    surveys[startTime]['y'].push(crd.latitude);
-    surveys[startTime]['a'].push(crd.accuracy);
-    surveys[startTime]['time'].push(crd.time);
+    // surveys[startTime]['x'].push(crd.longitude);
+    // surveys[startTime]['y'].push(crd.latitude);
+    // surveys[startTime]['a'].push(crd.accuracy);
+    // surveys[startTime]['time'].push(crd.time);
+
+    dataTotBuff[coordCounter*4]=crd.time;
+    dataTotBuff[(coordCounter*4+1)]=crd.longitude*1000000;
+    dataTotBuff[(coordCounter*4+2)]=crd.latitude*1000000;
+    dataTotBuff[(coordCounter*4+3)]= crd.accuracy*100;
+
+    if(realTime){
+        if(isOnline){
+            //dataBuff = dataTotBuff.slice(coordCounter*4, coordCounter*4+3);
+            sendRTdata(uid, startTime, crd);
+        } else {
+
+        }
+    }
+
 
     coordCounter=coordCounter+1;
-    if(realTime){
-        sendRTdata(uid, startTime, crd);
+    if((coordCounter % 1000)===0){
+        dataTotBuff = add2TypedArrays(dataTotBuff);
     }
+
     if(visible && $('#geolocContainer').is(':visible') ){
         updateFieldIfNotNull('geoloc_lat', crd.latitude, 8);
         updateFieldIfNotNull('geoloc_lng', crd.longitude, 8);
@@ -358,5 +409,40 @@ function uploadGeoJSONblob(blob) {
     objDiv.scrollTop = objDiv.scrollHeight + 10;
 
 
-    sendBlobData(uid, startTime, blob);
+    //sendGeoJsonBlobDataToServer(uid, startTime, blob);
+}
+
+function add2TypedArrays(a) { // a, b TypedArray of same type
+    var c = new (a.constructor)(a.length + 1000);
+    c.set(a, 0);
+    return c;
+}
+
+
+const big0 = BigInt(0)
+const big1 = BigInt(1)
+const big8 = BigInt(8)
+
+function bigToUint8Array(big) {
+    if (big < big0) {
+        // work out how long is the big int in bits and add 1
+        const bits = (BigInt(big.toString(2).length) / big8 + big1) * big8
+        // create a BigInt that's 100000... of length of big + 1
+        const prefix1 = big1 << bits
+        big += prefix1
+    }
+    let hex = big.toString(16)
+    if (hex.length % 2) {
+        hex = '0' + hex
+    }
+    const len = hex.length / 2
+    const u8 = new Uint8Array(len)
+    var i = 0
+    var j = 0
+    while (i < len) {
+        u8[i] = parseInt(hex.slice(j, j + 2), 16)
+        i += 1
+        j += 2
+    }
+    return u8
 }
