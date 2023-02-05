@@ -6,7 +6,7 @@ $dirname = "incoming/imgs/". $_POST['uid']   ;
 
 
 if( !is_dir($dirname)){
-  if(!mkdir($dirname)){
+  if(!mkdir($dirname, 0777, True)){
     echo  $dirname . " not able to create this directory.";
     exit(0);
   }

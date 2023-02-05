@@ -5,7 +5,7 @@ $data = mb_strcut($entityBody , 18, mb_strlen($entityBody, '8bit') );
 $startTime = unpack("Q", mb_strcut($entityBody , 10, 18 ) );
 
 $POST = Array('startTime'=>$startTime[1] ,
-                     'blob'=>unpack("L*", $data),
+                     'blob'=>unpack("l*", $data),
                       'uid'=>  mb_strcut($entityBody , 0, 10   ),
                     );
 
@@ -64,7 +64,7 @@ if(!file_put_contents($tmpfnameb,  $data ) ){
     exit(0);
 }
 
-createGeoJSON2($POST['blob'], $tmpfname);
+createGeoJSON2($POST['blob'], $tim , $tmpfname);
 
 chmod($tmpfname, 0777);
 
@@ -74,11 +74,7 @@ $zip->addFile($tmpfname, basename($tmpfname) );
 $zip->close();
 //unlink($tmpfname);
 
-if(!file_put_contents($tmpfnamez,  $data ) ){
-    header('Content-type: application/json');
-    echo json_encode( array("error"=> " cannot write to file"));
-    exit(0);
-}
+
 chmod($tmpfnamez, 0777);
 chmod($tmpfnameb, 0777);
 

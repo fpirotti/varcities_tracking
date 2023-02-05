@@ -65,7 +65,7 @@ For maximum efficiency, data transferred over the internet
 is in binary format. Tracking data are transferred as 
 32bit  Unsigned integers, 
 
- - **latitude** and **longitude** are multiplied by 1000000 to 
-keep submetric resolution on the integer.
+ - **latitude** and **longitude** are multiplied by 10000000 (1E7) to 
+keep submetric resolution on the UINT32 integer.
  - **timestamp** in milliseconds  from start of recording
  - **accuracy** is in centimeters

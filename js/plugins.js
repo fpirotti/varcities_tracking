@@ -155,7 +155,7 @@ sendGeoJsonBlobDataToServer = function(uid, startTime, blob){
 }
 
 
-    sendGeoJsonBlobDataToServerBuff = function(uid, startTime, buff){
+sendGeoJsonBlobDataToServerBuff = function(uid, startTime, buff){
 
 
     const blob = new Blob([uid, starTimeBuff  ,buff], { type: "application/octet-stream" });
@@ -172,11 +172,18 @@ sendGeoJsonBlobDataToServer = function(uid, startTime, blob){
         },
         error: function() {
             //start_tracking_button.click();
+            resetTrackButton();
             saveToLocalStorage(uid, startTime, buff);
             updateLoggerAlert("Server is not available - data stored locally. If this is unexpected, contact the developer.", 3);
         }
     });
 
+
+    promise.error(function(err){
+        updateLoggerAlert("GeoJSON error uploading data to server." + JSON.stringify(err), 3);
+        resetTrackButton();
+
+    });
 
     promise.success(function(data){
 
@@ -185,7 +192,7 @@ sendGeoJsonBlobDataToServer = function(uid, startTime, blob){
         }  else {
             updateLoggerAlert("GeoJSON successfully uploaded to server.", 0);
         }
-
+        resetTrackButton();
 
     });
 
@@ -195,8 +202,8 @@ sendRTdata = function(uid, startTime, crd){
 
     //var formData = new FormData();
     dataBuff[0]=crd.time;
-    dataBuff[1]=crd.longitude*1000000;
-    dataBuff[2]=crd.latitude*1000000;
+    dataBuff[1]=crd.longitude*10000000;
+    dataBuff[2]=crd.latitude*10000000;
     dataBuff[3]=crd.accuracy*100;
 
 
@@ -349,8 +356,8 @@ function successLocationListen(pos) {
     // surveys[startTime]['time'].push(crd.time);
 
     dataTotBuff[coordCounter*4]=crd.time;
-    dataTotBuff[(coordCounter*4+1)]=crd.longitude*1000000;
-    dataTotBuff[(coordCounter*4+2)]=crd.latitude*1000000;
+    dataTotBuff[(coordCounter*4+1)]=crd.longitude*10000000;
+    dataTotBuff[(coordCounter*4+2)]=crd.latitude*10000000;
     dataTotBuff[(coordCounter*4+3)]= crd.accuracy*100;
 
     if(realTime){

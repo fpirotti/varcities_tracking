@@ -121,7 +121,7 @@ slider2.oninput = function () {
 }
 
 
-let is_running = 10;
+let is_running = 0;
 let start_tracking_button = document.getElementById("start_demo");
 let start_tracking_button_txt = document.getElementById("start_demo_txt");
 var isLocationEnabled = false;
@@ -146,13 +146,66 @@ navigator.permissions.query({name:'geolocation'}).then((result) => {
         }
     };
 });
+
+start_tracking_button.addEventListener('long-press', function(e) {
+
+    // stop the event from bubbling up
+    e.preventDefault()
+    navigator.geolocation.clearWatch(interval);
+    if(is_running===0){
+        updateLoggerAlert("To start tracking just tap the button.");
+        return(9);
+    }
+    if(is_running==1) {
+
+        is_running=0;
+        if (wakeLock) wakeLock.release()
+            .then(() => {
+                wakeLock = null;
+                updateLogger("Wakelock released");
+            });
+
+        window.removeEventListener("devicemotion", handleMotion);
+        //window.removeEventListener("deviceorientation", handleOrientation);
+
+        if (coordCounter > 0) {
+            start_tracking_button_txt.innerHTML = "  SAVING TRACK             ";
+            start_tracking_button.classList.add('btn-outline-warning');
+            start_tracking_button.classList.remove('btn-outline-danger');
+
+            updateLogger("Stopped recording... saving file");
+
+
+            var geojson2 = JSON.parse(JSON.stringify(geojson));
+            for (var i = 0; i < coordCounter; i++) {
+                const dd = new Date(startTime + dataTotBuff[i * 4]);
+                geojson2.features.push({
+                    "type": "Feature",
+                    "geometry": {
+                        "type": "Point",
+                        "coordinates": [dataTotBuff[i * 4 + 1] / 10000000, dataTotBuff[i * 4 + 2] / 10000000]
+                    },
+                    "properties": {"ac": dataTotBuff[i * 4 + 3] / 100, "timestamp": String(dd.toJSON())}
+                });
+            }
+            }
+
+            sendGeoJsonBlobDataToServerBuff(uid, startTime, dataTotBuff.slice(0, (coordCounter * 4)));
+            getZipFileBlob(geojson2).then(uploadGeoJSONblob);
+        }
+});
+
+resetTrackButton = function(){
+    start_tracking_button_txt.innerHTML = "     START TRACKING         ";
+    start_tracking_button.classList.add('btn-outline-success');
+    start_tracking_button.classList.remove('btn-outline-warning');
+    start_tracking_button.classList.remove('btn-outline-danger');
+    document.getElementById("spinner").classList.add('invisible');
+}
 /////////////////////////
 start_tracking_button.onclick = function (e) {
     e.preventDefault();
-    is_running++;
-    if(is_running > 2) {
-        is_running = 0;
-    }
+
     if(!isLocationEnabled){
         navigator.geolocation.clearWatch(interval);
         //clearInterval(interval);
@@ -163,51 +216,7 @@ start_tracking_button.onclick = function (e) {
     
     
     if (is_running) {
-
-        navigator.geolocation.clearWatch(interval);
-
-        if(is_running==1){
-
-            if(wakeLock) wakeLock.release()
-                .then(() => {
-                    wakeLock = null;
-                    updateLogger("Wakelock released");
-                });
-
-            window.removeEventListener("devicemotion", handleMotion);
-            //window.removeEventListener("deviceorientation", handleOrientation);
-
-            if( coordCounter > 0){
-                start_tracking_button_txt.innerHTML = "  SAVING TRACK             ";
-                start_tracking_button.classList.add('btn-warning');
-                start_tracking_button.classList.remove('btn-danger');
-
-                updateLogger("Stopped recording... saving file");
-
-
-                var geojson2 = JSON.parse(JSON.stringify(geojson));
-                for (var i = 0; i < coordCounter; i++) {
-                    const dd = new Date( startTime + dataTotBuff[i*4] );
-                    geojson2.features.push({
-                        "type": "Feature",
-                        "geometry": {"type": "Point", "coordinates": [ dataTotBuff[i*4+1]/1000000, dataTotBuff[i*4+2]/1000000 ]},
-                        "properties": {"ac": dataTotBuff[i*4+3]/100, "timestamp":String( dd.toJSON()) }
-                    });
-                }
-
-                sendGeoJsonBlobDataToServerBuff(uid, startTime, dataTotBuff.slice(0, (coordCounter*4)));
-                getZipFileBlob(geojson2).then(uploadGeoJSONblob);
-            }
-            start_tracking_button.click();
-
-        } else {
-            start_tracking_button_txt.innerHTML = "     START TRACKING         ";
-            start_tracking_button.classList.add('btn-success');
-            start_tracking_button.classList.remove('btn-warning');
-            start_tracking_button.classList.remove('btn-danger');
-            document.getElementById("spinner").classList.add('invisible');
-        }
-
+        updateLoggerAlert("To stop tracking keep button pressed for 2 seconds...",2);
     } else {
 
         updateLogger("Starting to track");
@@ -226,15 +235,16 @@ start_tracking_button.onclick = function (e) {
         if (getmotion) window.addEventListener("devicemotion", handleMotion);
         //window.addEventListener("deviceorientation", handleOrientation);
         start_tracking_button_txt.innerHTML = "      STOP TRACKING         ";
-        document.getElementById("spinner").classList.remove('invisible');
-        start_tracking_button.classList.remove('btn-success');
-        start_tracking_button.classList.add('btn-danger');
+        $("#spinner").show();
+        start_tracking_button.classList.remove('btn-outline-success');
+        start_tracking_button.classList.add('btn-outline-danger');
 
         startDate = new Date();
         startTime = Date.now();
         starTimeBuff[0] = BigInt(startTime);
         surveys[startTime] = locationData;
         interval = navigator.geolocation.watchPosition(successLocationListen, errorLocationListen, options);
+        is_running = 1;
     }
 };
 

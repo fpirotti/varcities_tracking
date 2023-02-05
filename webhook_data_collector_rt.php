@@ -8,11 +8,11 @@
 
 
   session_start();
+
   if(        !isset( $_SESSION['startTime']) ||
              $_SESSION['startTime'] != $POST['startTime'] ||
              $_SESSION['uid'] !=$POST['uid']  || !isset($_SESSION["fpath"] ) || ctype_space($_SESSION["fpath"]) ||
              $_SESSION["fpath"]==="" ){
-
 
     $_SESSION["dirname"]= "incoming/rt/". $POST['uid']    ;
     $dirname=$_SESSION["dirname"];
@@ -21,14 +21,14 @@
     if( !is_dir($dirname)){
       if(!mkdir($dirname, 0777, True)){
         header('Content-type: application/json');
-        echo json_encode( array("error"=>$dirname. " not able to create this directory."));
+        echo json_encode( array("error"=>$dirname. " not able to create this directory (RT)."));
         exit(-1);
       }
     }
 
     if( !isset($POST['startTime'] ) ){
       header('Content-type: application/json');
-        echo json_encode( array("error"=> " No starttime found!"));
+        echo json_encode( array("error"=> "No start-time found (RT)!"));
         exit(-1);
       }
 
@@ -36,6 +36,11 @@
 
       $tmpfname = $dirname . "/" . $tdate;
      $_SESSION["fpath"] = $tmpfname .".bin";
+    if(!file_put_contents($_SESSION["fpath"],  '',  LOCK_EX) ){
+      header('Content-type: application/json');
+      echo json_encode( array("error"=> " cannot write to RT file"));
+    }
+    chmod($_SESSION["fpath"], 0777);
   }
 
   // if(!file_put_contents($_SESSION["fpath"],  $_POST['data']['longitude'].'|'.$_POST['data']['latitude'].'|'.round($_POST['data']['accuracy']).'|'.$_POST['data']['time'].PHP_EOL ,
@@ -47,7 +52,7 @@
 
   if(!file_put_contents($_SESSION["fpath"],  $data , FILE_APPEND | LOCK_EX) ){
     header('Content-type: application/json');
-    echo json_encode( array("error"=> " cannot write to file"));
+    echo json_encode( array("error"=> " cannot write to RT file"));
   }
 
 
