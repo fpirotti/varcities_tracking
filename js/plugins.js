@@ -76,25 +76,42 @@ updateLoggerWarn = function(text, idlogger='logger', newline=true){
     updateLogger("<span style='color:orange'>"+text+"</span>", idlogger, newline);
 }
 
-updateLoggerAlert = function(text, typeAlert=0){
+updateLoggerAlert = function(text, typeAlert=0, forceLog=0){
     var tt = "alert-primary";
     if(typeAlert===1) {
-        updateLogger( text ); tt = "alert-success";
+        if(forceLog!==0) {
+            updateLogger( text );
+        }
+        tt = "alert-success";
     }
     if(typeAlert===2) {
-        updateLoggerWarn( text ); tt = "alert-warning";
+        if(forceLog!==0) {
+            updateLoggerWarn( text );
+        }
+        tt = "alert-warning";
     }
     if(typeAlert===3) {
-        updateLoggerErr( text ); tt = "alert-danger";
+        if(forceLog!==0) {
+            updateLoggerErr( text );
+        }
+        tt = "alert-danger";
     }
-    var alert = document.createElement("div");
-    alert.className = `alert ${tt}`;
-    //alert.id = "alertID";
-    alert.textContent = text;
-    alert.addEventListener('click', function(){ $(this).fadeOut(400) });
-    document.getElementById('mainTAG').appendChild(alert);
-    alert.style.marginTop = "1rem";
-    setTimeout( function(){ $(alert).remove() }, 10000);
+
+    if(forceLog < 2){
+        var alert = document.createElement("div");
+        alert.className = `alert  ${tt}`;
+        //alert.id = "alertID";
+        alert.textContent = text;
+        alert.addEventListener('click', function(){ $(this).fadeOut(400) });
+        document.getElementById('mainTAG').appendChild(alert);
+        alert.style.marginTop = "1rem";
+        $("html, body").animate({
+            scrollTop: $(
+                'html, body').get(0).scrollHeight
+        }, 1000)
+        setTimeout( function(){   $(alert).fadeOut(1000, function(){ $(alert).remove() } );    }, 10000);
+    }
+
 }
 
 saveToLocalStorage = function(uid, startTime, blob){
@@ -174,13 +191,13 @@ sendGeoJsonBlobDataToServerBuff = function(uid, startTime, buff){
             //start_tracking_button.click();
             resetTrackButton();
             saveToLocalStorage(uid, startTime, buff);
-            updateLoggerAlert("Server is not available - data stored locally. If this is unexpected, contact the developer.", 3);
+            updateLoggerAlert("Server is not available - data stored locally. If this is unexpected, contact the developer.", 3, 1);
         }
     });
 
 
     promise.error(function(err){
-        updateLoggerAlert("GeoJSON error uploading data to server." + JSON.stringify(err), 3);
+        updateLoggerAlert("GeoJSON error uploading data to server." + JSON.stringify(err), 3, 1);
         resetTrackButton();
 
     });
@@ -188,9 +205,9 @@ sendGeoJsonBlobDataToServerBuff = function(uid, startTime, buff){
     promise.success(function(data){
 
         if(data.error!==undefined){
-            updateLoggerAlert("Error uploading GeoJSON to server: "+data.error, 3);
+            updateLoggerAlert("Error uploading GeoJSON to server: "+data.error, 3, 1);
         }  else {
-            updateLoggerAlert("GeoJSON successfully uploaded to server.", 0);
+            updateLoggerAlert("GeoJSON successfully uploaded to server.", 1);
         }
         resetTrackButton();
 
@@ -211,7 +228,7 @@ sendRTdata = function(uid, startTime, crd){
         type: 'POST',
         url: 'https://www.cirgeo.unipd.it/varcities/webhook_data_collector_rt.php',
         error: function (x, e) {
-            updateLoggerErr(JSON.stringify( e) + " - error on real time update, " +
+            updateLoggerErr(JSON.stringify( x) + " - error on real time update, " +
                 "will terminate real time streaming!");
         },
 
@@ -385,11 +402,13 @@ function successLocationListen(pos) {
 
 
 function errorLocationListen(e) {
-    is_running = 11; // anothing above 2 will trigger 0
+    $("#errorsLocs").html(errorLocations);
+    errorLocations++;
+    $("#errorsLocs").html(" ("+errorLocations+")");
+    var msg  =e.message + " ... tracking is temporarily not working as  Location is not accessible yet please wait or " +
+        "check your phone settings: tot errors="+errorLocations;
+    updateLoggerAlert(msg, 2, true);
 
-    var msg  =e.message + " ... tracking will be stopped. App will not work without Location access, please check your phone settings.";
-    updateLoggerErr(msg);
-    alert(msg);
 }
 
 

@@ -20,7 +20,7 @@ const dataBuff = new Uint32Array(buffer, 8, 4);
 // buffer for data size of 1000, if count is more,
 var dataTotBuff = new Uint32Array(1000);
 uidBuff.set(utf8EncodedString);
-
+var errorLocations = 0;
 let interval = null;
 let coordCounter = 0;
 let maxacc = 0;
@@ -43,7 +43,7 @@ var realTime = true;
 
 let isWakeSupported = false;
 const visible = true;
-$('#man').hide();
+
 let wakeLock = null;
 
 
@@ -61,7 +61,7 @@ window.addEventListener( "online" , ( event ) =>
 {
     console.log( "online event" );
     isOnline=true;
-    updateLoggerAlert("You are online! ", 3);
+    updateLoggerAlert("You are online! ", 1);
     //updateLogger("You are online");
 });
 // event listener when going offline
@@ -84,15 +84,15 @@ $("#file-input").on("input", function (e) {
                 if ((typeof exifData.GPSLongitude) === "undefined") {
                     var altstr = "No  GPS data found in your image!!";
                     alert(altstr + " Please check LOG for more info.");
-                    updateLoggerErr(altstr + " ... " +
+                    updateLoggerAlert(altstr + " ... " +
                         " <a href='https://www.google.com/search?q=activate+geotagging+in+photoes+smartphone&ei=v9rbY5qeD8iHxc8P5qKUyAw&ved=0ahUKEwja-cK0l_f8AhXIQ_EDHWYRBckQ4dUDCA8&uact=5&oq=activate+geotagging+in+photoes+smartphone&' target='_blank'>" +
-                        "Click HERE for help</a>");
+                        "Click HERE for help</a>", 3, 1);
 
                 } else {
                     upload.doUpload();
                 }
             } else {
-                alert("No EXIF data or GPS data found in image '" + file.name + "'!! Please check your phone settings.");
+                updateLoggerAlert("No  GPS data found in image !!! Please check your phone settings.", 3,1);
             }
         });
     }
@@ -159,11 +159,18 @@ start_tracking_button.addEventListener('long-press', function(e) {
     if(is_running==1) {
 
         is_running=0;
-        if (wakeLock) wakeLock.release()
-            .then(() => {
-                wakeLock = null;
-                updateLogger("Wakelock released");
-            });
+        try {
+            wakeLock.release()
+                .then(() => {
+                    wakeLock = null;
+                    updateLogger("Wakelock released");
+                });
+        } catch (error) {
+            updateLoggerAlert("Wakelock .." + error, 2, 1);
+            console.error(error);
+            // Expected output: ReferenceError: nonExistentFunction is not defined
+            // (Note: the exact output may be browser-dependent)
+        }
 
         window.removeEventListener("devicemotion", handleMotion);
         //window.removeEventListener("deviceorientation", handleOrientation);
@@ -173,8 +180,7 @@ start_tracking_button.addEventListener('long-press', function(e) {
             start_tracking_button.classList.add('btn-outline-warning');
             start_tracking_button.classList.remove('btn-outline-danger');
 
-            updateLogger("Stopped recording... saving file");
-
+            updateLoggerAlert("Stopped recording... saving GeoJSON locally and on server.");
 
             var geojson2 = JSON.parse(JSON.stringify(geojson));
             for (var i = 0; i < coordCounter; i++) {
@@ -237,6 +243,7 @@ start_tracking_button.onclick = function (e) {
         start_tracking_button_txt.innerHTML = "      STOP TRACKING         ";
         $("#spinner").show();
         start_tracking_button.classList.remove('btn-outline-success');
+        start_tracking_button.classList.remove('btn-success');
         start_tracking_button.classList.add('btn-outline-danger');
 
         startDate = new Date();

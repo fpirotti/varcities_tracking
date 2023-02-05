@@ -54,17 +54,15 @@
 
 <main id="mainTAG" data-bs-theme="dark">
     <div data-bs-theme="dark" class="container d-grid gap-2">
-    
-    <span id="start_demo" class="btn  btn-lg text-nowrap btn-outline-secondary" style="">
-    
-    <img src="img/white2.svg" alt="varcities" style="  width:3em; opacity:0.3; "/> <b
-            id="start_demo_txt">     START TRACKING         </b>
+    <hr>
+    <span id="start_demo" class="btn  btn-lg text-nowrap btn-outline-success " style="">
+     <b  id="start_demo_txt">     START TRACKING         </b>
     <span class="spinner-grow spinner-grow-sm   float-right" style="display: none;" role="status" aria-hidden="true"
           id="spinner"></span>
   </span>
 
 
-        <span class="btn btn-lg btn-outline-primary btn-block " onclick="$('#logger').toggle()">
+        <span class="btn btn-lg btn-outline-secondary btn-block " onclick="$('#logger').toggle()">
 
         <span class="float-left">
             <svg xmlns="http://www.w3.org/2000/svg" width="36" height="26" fill="currentColor" class="bi bi-body-text"
@@ -107,7 +105,7 @@
         </div>
 
 
-    <span class="btn btn-lg btn-outline-primary btn-block" onclick="$('#geolocContainer').toggle()">
+    <span class="btn btn-lg btn-outline-secondary btn-block" onclick="$('#geolocContainer').toggle()">
       <span class="float-left">  <svg xmlns="http://www.w3.org/2000/svg" width="36" height="26" fill="currentColor"
                                       class="bi bi-pin-map" viewBox="0 0 16 16">
           <path fill-rule="evenodd"
@@ -143,7 +141,7 @@
                         Acc: <span id="geoloc_acc">0</span><span> m</span>
                     </div>
                     <div class="col-md-6 ">
-                        Num events: <span id="geoloc_n">0</span><span></span>
+                        Num events: <span id="geoloc_n">0</span><span id="errorsLocs"></span><span></span>
                     </div>
                 </div>
             </div>
@@ -152,7 +150,7 @@
                     <a id='linktag'></a>
                 </div>
             </div>
-        <span class="btn btn-lg   btn-block" href="#"
+        <span class="btn btn-lg   btn-outline-secondary" href="#"
               id="file-button" role="button" style="height:4em;" type="button">
         <svg xmlns="http://www.w3.org/2000/svg" width="86" height="66" fill="currentColor" class="bi bi-camera"
              viewBox="0 0 16 16">
@@ -164,33 +162,7 @@
                id="file-input" style="display:none;" type="file">
 
 
-        <hr>
-        <div class="row" id="man">
-            <div class="col-md-12 text-justify">
-                This app records positions of the phone at a user-defined frequency and monitors the phone
-                accelerometers
-                keeping track of shocks to the smartphone that might indicate problems to the carrier.
-                <hr>
-                The coordinates of the positions are sent directly to a server to track in real time the movements of
-                the phone; this option can be turned off by the user, and is automatically turned off if not network is
-                found.
 
-                <hr>
-                The locations are saved locally when user stops to record positions, and all positions are sent to
-                server and saved locally.
-                If sending to server is successful then the local copy is deleted. If server connection fails (e.g. no
-                network or server is down)
-                then the local copy is stored and synced at later time. Syncing can be forced by the user, or it is done
-                automatically at next
-                app launch.
-                <hr>
-                Location data are downloaded in geoJson format (compressed in a ZIP archive), compatible with all GIS
-                software, e.g. <a href="https://www.qgis.org/en/" target="_blank"> QGIS</a>.
-                <hr>
-                The big red button can be used to send a signal to the server and trigger further actions (e.g. emails
-                or calls).
-            </div>
-        </div>
 
         <div class="progress position-absolute top-50 start-50 translate-middle" style="height: 25px; display:none;">
             <div id="progress-wrpe" class="progress-bar"
@@ -200,7 +172,13 @@
             </div>
         </div>
     </div>
-
+    <span class="btn  btn-outline-secondary" href="README.html" target="_blank">
+        <svg xmlns="http://www.w3.org/2000/svg" width="86" height="66" fill="currentColor" class="bi bi-camera"
+             viewBox="0 0 16 16">
+            <path d="M15 12a1 1 0 0 1-1 1H2a1 1 0 0 1-1-1V6a1 1 0 0 1 1-1h1.172a3 3 0 0 0 2.12-.879l.83-.828A1 1 0 0 1 6.827 3h2.344a1 1 0 0 1 .707.293l.828.828A3 3 0 0 0 12.828 5H14a1 1 0 0 1 1 1v6zM2 4a2 2 0 0 0-2 2v6a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2h-1.172a2 2 0 0 1-1.414-.586l-.828-.828A2 2 0 0 0 9.172 2H6.828a2 2 0 0 0-1.414.586l-.828.828A2 2 0 0 1 3.172 4H2z"/>
+            <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
+        </svg>
+    </span>
 
 </main>
 
@@ -208,19 +186,8 @@
 
 <script src="js/vendor/jquery-2.1.3.min.js"></script>
 <script src="js/jquery.exif.js"></script>
-<script src="js/plugins.js?v=0011211111111111"></script>
-
-<!-- Google Analytics: change UA-XXXXX-X to be your site's ID.
-<script>
-    (function(b,o,i,l,e,r){b.GoogleAnalyticsObject=l;b[l]||(b[l]=
-    function(){(b[l].q=b[l].q||[]).push(arguments)});b[l].l=+new Date;
-    e=o.createElement(i);r=o.getElementsByTagName(i)[0];
-    e.src='//www.google-analytics.com/analytics.js';
-    r.parentNode.insertBefore(e,r)}(window,document,'script','ga'));
-    ga('create','UA-XXXXX-X');ga('send','pageview');
-</script>
- -->
-<script src="js/main.js?v=0002113141f11"></script>
+<script src="js/plugins.js?v=01"></script>
+<script src="js/main.js?v=2"></script>
 
 </body>
 

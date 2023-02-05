@@ -36,10 +36,14 @@
 
       $tmpfname = $dirname . "/" . $tdate;
      $_SESSION["fpath"] = $tmpfname .".bin";
-    if(!file_put_contents($_SESSION["fpath"],  '',  LOCK_EX) ){
+
+    $file = fopen($_SESSION["fpath"], 'w');
+    if(! $file ){
       header('Content-type: application/json');
-      echo json_encode( array("error"=> " cannot write to RT file"));
+      echo json_encode( array("error"=> " cannot write to RT file first time...."));
+      exit(-1);
     }
+    fclose($file);
     chmod($_SESSION["fpath"], 0777);
   }
 
