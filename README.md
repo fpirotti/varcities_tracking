@@ -1,11 +1,10 @@
 ---
 title: "Boilerplate for tracking apps"
-author: "Francesco Pirotti"
-date: "2023-02-05" 
+author: "Francesco Pirotti" 
+date: "`r format(Sys.time(), '%d %B, %Y')`"
 ---
 
-
-# Boilerplate for tracking apps
+ 
 
 A tracking app in javascript with several advantages with 
 respect to alternatives in JAVA / Android Studio.

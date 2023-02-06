@@ -3,7 +3,6 @@ var serviceWorkerRegistration = null;
 var app = new App();
 
 
-
 function init()
 {
     // service worker

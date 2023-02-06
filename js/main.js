@@ -1,5 +1,5 @@
 if (localStorage.getItem("uid") === null) {
-    localStorage.setItem('uid', (Math.random() + 1).toString(36).slice(2));
+    localStorage.setItem('uid', (Math.random() + 1).toString(36).slice(2,12));
 }
 
 const uid = localStorage.getItem('uid'); //returns 4587ff526d
@@ -11,15 +11,24 @@ const options = {
     maximumAge: 0
 };
 
+
 var utf8EncodedString = new TextEncoder("utf-8").encode(uid);
 const buffer = new ArrayBuffer(10+8+4+4+4+4); // 10=uid, 8=starttime timestamp long uint, 4x4 are lat long acc elapsed time
+
 
 const uidBuff = new Uint8Array(buffer, 24, 10);
 const starTimeBuff = new BigUint64Array(buffer, 0, 1);
 const dataBuff = new Uint32Array(buffer, 8, 4);
+
 // buffer for data size of 1000, if count is more,
 var dataTotBuff = new Uint32Array(1000);
-uidBuff.set(utf8EncodedString);
+
+try {
+    uidBuff.set(utf8EncodedString);
+} catch (e) {
+    console.log(e);
+    updateLoggerAlert(uidBuff + " setting uid " + uid + " one " + utf8EncodedString + " returned error.", 2)
+}
 var errorLocations = 0;
 let interval = null;
 let coordCounter = 0;
@@ -33,6 +42,7 @@ const geojson = {
     "type": "FeatureCollection",
     "features": []
 };
+
 
 let accthreshold = document.getElementById('accthresh');
 updateLogger("Welcome, your unique id is: " + uid, 'logger', newline = false);
@@ -101,6 +111,8 @@ $("#file-input").on("input", function (e) {
 $('#file-button').click(function () {
     $('#file-input').click();
 });
+ 
+
 if (!getmotion) $('#accelContainer').hide();
 
 
@@ -206,13 +218,16 @@ resetTrackButton = function(){
     start_tracking_button.classList.add('btn-outline-success');
     start_tracking_button.classList.remove('btn-outline-warning');
     start_tracking_button.classList.remove('btn-outline-danger');
-    document.getElementById("spinner").classList.add('invisible');
+    $("#file-button, #manual").removeClass('disabled');
+    $("#spinner").hide();
 }
 /////////////////////////
 start_tracking_button.onclick = function (e) {
+
     e.preventDefault();
 
     if(!isLocationEnabled){
+
         navigator.geolocation.clearWatch(interval);
         //clearInterval(interval);
         is_running = 0;
@@ -226,18 +241,21 @@ start_tracking_button.onclick = function (e) {
     } else {
 
         updateLogger("Starting to track");
+        $("#manual").addClass('disabled');
+
         coordCounter = 0;
+
         try {
             wakeLock =   navigator.wakeLock.request('screen').then(
                 function(prom){
                     wakeLock=prom;
                 }
             );
-
             updateLogger('Wake Lock is active!');
         } catch (err) {
             updateLogger( `Wke lock error ${err.name}, ${err.message}`);
         }
+
         if (getmotion) window.addEventListener("devicemotion", handleMotion);
         //window.addEventListener("deviceorientation", handleOrientation);
         start_tracking_button_txt.innerHTML = "      STOP TRACKING         ";

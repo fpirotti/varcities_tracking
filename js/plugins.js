@@ -19,6 +19,7 @@
             console[method] = noop;
         }
     }
+
 }());
 
 // Place any jQuery/helper plugins in here.
@@ -105,10 +106,6 @@ updateLoggerAlert = function(text, typeAlert=0, forceLog=0){
         alert.addEventListener('click', function(){ $(this).fadeOut(400) });
         document.getElementById('mainTAG').appendChild(alert);
         alert.style.marginTop = "1rem";
-        $("html, body").animate({
-            scrollTop: $(
-                'html, body').get(0).scrollHeight
-        }, 1000)
         setTimeout( function(){   $(alert).fadeOut(1000, function(){ $(alert).remove() } );    }, 10000);
     }
 
@@ -319,7 +316,7 @@ function updateFieldIfNotNull(fieldName, value, precision=10, force=false){
         if (value != null && visible)
             document.getElementById(fieldName).innerHTML = value.toFixed(precision);
     }
-};
+}
 
 
 function handleOrientation(event) {
