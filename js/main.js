@@ -13,6 +13,8 @@ const options = {
 
 
 var utf8EncodedString = new TextEncoder("utf-8").encode(uid);
+
+
 const buffer = new ArrayBuffer(10+8+4+4+4+4); // 10=uid, 8=starttime timestamp long uint, 4x4 are lat long acc elapsed time
 
 
@@ -108,12 +110,7 @@ $("#file-input").on("input", function (e) {
     }
 
 });
-$('#file-button').click(function () {
-    $('#file-input').click();
-});
- 
 
-if (!getmotion) $('#accelContainer').hide();
 
 
 var slider = document.getElementById("accthresh");
@@ -123,6 +120,7 @@ output.innerHTML = slider.value; // Display the default slider value
 slider.oninput = function () {
     output.innerHTML = this.value;
 }
+
 
 var slider2 = document.getElementById("geoloc_freq");
 var output2 = document.getElementById("geoloc_freq_value");
@@ -159,8 +157,21 @@ navigator.permissions.query({name:'geolocation'}).then((result) => {
     };
 });
 
+
+$('#file-button')[0].addEventListener('long-press', function(e) {
+    $('#file-input').click();
+});
+
+$('#file-button').click(function () {
+    $('#file-input').click();
+});
 start_tracking_button.addEventListener('long-press', function(e) {
 
+    removeEventListener("beforeunload", beforeUnloadListener, {capture: true});
+
+    $('#file-button').click(function () {
+        $('#file-input').click();
+    });
     // stop the event from bubbling up
     e.preventDefault()
     navigator.geolocation.clearWatch(interval);
@@ -214,6 +225,11 @@ start_tracking_button.addEventListener('long-press', function(e) {
 });
 
 resetTrackButton = function(){
+    removeEventListener("beforeunload", beforeUnloadListener, {capture: true});
+
+    $('#file-button').click(function () {
+        $('#file-input').click();
+    });
     start_tracking_button_txt.innerHTML = "     START TRACKING         ";
     start_tracking_button.classList.add('btn-outline-success');
     start_tracking_button.classList.remove('btn-outline-warning');
@@ -239,6 +255,12 @@ start_tracking_button.onclick = function (e) {
     if (is_running) {
         updateLoggerAlert("To stop tracking keep button pressed for 2 seconds...",2);
     } else {
+
+        $('#file-button').off('click');
+        $('#file-button').click(function () {
+            updateLoggerAlert("To take photo while tracking, keep button pressed for 2 seconds...",2);
+        });
+        addEventListener("beforeunload", beforeUnloadListener, {capture: true});
 
         updateLogger("Starting to track");
         $("#manual").addClass('disabled');

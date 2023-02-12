@@ -1,0 +1,234 @@
+
+<!DOCTYPE html>
+<html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2023 by timv (http://jsbin.com/device-inertial-sensor-diagnostics/11/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<head>
+    <title>Device Motion/Orientation diagnostic measurements</title>
+</head>
+<body>
+<table>
+    <tr>
+        <td colspan="2">
+            <hr>
+        </td>
+    </tr>
+    <tr>
+        <td>Motion Supported</td>
+        <td width="250px" id="motionSupported"></td>
+    </tr>
+    <tr>
+        <td>relevant sensors available:</td>
+        <td id="motionSensorsAvailable"></td>
+    </tr>
+    <tr>
+        <td>motion acceleration (x, y, z)</td>
+        <td id="motionAccel"></td>
+    </tr>
+    <tr>
+        <td>motion acceleration incl. gravity (x, y, z)</td>
+        <td id="motionAccelG"></td>
+    </tr>
+    <tr>
+        <td>motion rotation rate (&alpha;, &beta;, &gamma;)</td>
+        <td id="motionRotation"></td>
+    </tr>
+    <tr>
+        <td>real-time motion frequency (Hz)</td>
+        <td id="motionFreq"></td>
+    </tr>
+    <tr>
+        <td>motion max frequency (Hz)</td>
+        <td id="motionMaxFreq"></td>
+    </tr>
+    <tr>
+        <td>motion stated interval</td>
+        <td id="motionInterval"></td>
+    </tr>
+    <tr>
+        <td colspan="2">
+            <hr>
+        </td>
+    </tr>
+    <tr>
+        <td>Orientation Supported</td>
+        <td id="orientationSupported"></td>
+    </tr>
+    <tr>
+        <td>relevant sensors available:</td>
+        <td id="orientationSensorsAvailable"></td>
+    </tr>
+    <tr>
+        <td>orientation values (&alpha;, &beta;, &gamma;)</td>
+        <td id="orientationValues"></td>
+    </tr>
+    <tr>
+        <td>orientation absolute</td>
+        <td id="orientationAbsolute"></td>
+    </tr>
+    <tr>
+        <td>orientation frequency (Hz)</td>
+        <td id="orientationFreq"></td>
+    </tr>
+    <tr>
+        <td>orientation max frequency (Hz)</td>
+        <td id="orientationMaxFreq"></td>
+    </tr>
+</table>
+
+<script src="js/fulltilt.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+    var promise = FULLTILT.getDeviceOrientation({'type': 'world'});
+    promise.then(function(orientationControl) {
+
+        orientationControl.listen(function() {
+
+            // Get latest screen-adjusted deviceorientation data
+            var screenAdjustedEvent = orientationControl.getScreenAdjustedEuler();
+
+            // Convert true north heading to radians
+            var heading = screenAdjustedEvent.alpha * Math.PI / 180;
+
+
+
+
+        });
+
+    });
+    var numberMotionEvents = 0;
+    var numberOrientationEvents = 0;
+    var motionMaxFreq = 0;
+    var orientationMaxFreq = 0;
+    var updateIntervalDelaySec = 2;
+
+    function compassHeading(alpha, beta, gamma) {
+
+        // Convert degrees to radians
+        var alphaRad = alpha * (Math.PI / 180);
+        var betaRad = beta * (Math.PI / 180);
+        var gammaRad = gamma * (Math.PI / 180);
+
+        // Calculate equation components
+        var cA = Math.cos(alphaRad);
+        var sA = Math.sin(alphaRad);
+        var cB = Math.cos(betaRad);
+        var sB = Math.sin(betaRad);
+        var cG = Math.cos(gammaRad);
+        var sG = Math.sin(gammaRad);
+
+        // Calculate A, B, C rotation components
+        var rA = - cA * sG - sA * sB * cG;
+        var rB = - sA * sG + cA * sB * cG;
+        var rC = - cB * cG;
+
+        // Calculate compass heading
+        var compassHeading = Math.atan(rA / rB);
+
+        // Convert from half unit circle to whole unit circle
+        if(rB < 0) {
+            compassHeading += Math.PI;
+        }else if(rA < 0) {
+            compassHeading += 2 * Math.PI;
+        }
+
+        // Convert radians to degrees
+        compassHeading *= 180 / Math.PI;
+
+        return compassHeading;
+
+    }
+    function onMotion(event) {
+        if (event.acceleration.x==null && event.acceleration.y==null && event.acceleration.z==null
+            && event.accelerationIncludingGravity.x==null && event.accelerationIncludingGravity.y==null && event.accelerationIncludingGravity.z==null
+            && event.rotationRate.alpha==null && event.rotationRate.beta==null && event.rotationRate.gamma==null) {
+            // null-event
+            document.getElementById("motionSensorsAvailable").innerHTML = "no";
+            return;
+        }
+
+        document.getElementById('motionAccel').innerHTML =
+            roundToFixedArray([event.acceleration.x,
+                event.acceleration.y,
+                event.acceleration.z]);
+
+        document.getElementById("motionAccelG").innerHTML =
+            roundToFixedArray([event.accelerationIncludingGravity.x,
+                event.accelerationIncludingGravity.y,
+                event.accelerationIncludingGravity.z]);
+
+        document.getElementById("motionRotation").innerHTML =
+            roundToFixedArray([event.rotationRate.alpha,
+                event.rotationRate.beta,
+                event.rotationRate.gamma]);
+
+        document.getElementById("motionInterval").innerHTML = event.interval;
+        document.getElementById("motionSensorsAvailable").innerHTML = "yes";
+        ++numberMotionEvents;
+    }
+
+    function roundToFixed(value) {
+        return value==null ? value : value.toFixed(4);
+    }
+
+    function roundToFixedArray(values) {
+        return '[' + values.map(function(value) {
+            return roundToFixed(value);
+        }).join(',') + ']';
+    }
+
+    function  onOrientation(event) {
+        if (event.alpha==null && event.beta==null && event.gamma==null) {
+            // null-event
+            document.getElementById("orientationSensorsAvailable").innerHTML = "no";
+            return;
+        }
+        document.getElementById("orientationValues").innerHTML =
+            roundToFixedArray([event.alpha, event.beta, event.gamma]);
+        document.getElementById("orientationAbsolute").innerHTML = compassHeading(event.alpha, event.beta, event.gamma); // event.absolute;
+        document.getElementById("orientationSensorsAvailable").innerHTML = "yes";
+        ++numberOrientationEvents;
+    }
+
+    function updateMeasurements() {
+        var motionFreq = numberMotionEvents/updateIntervalDelaySec;
+        var orientationFreq = numberOrientationEvents/updateIntervalDelaySec;
+        motionMaxFreq = Math.max(motionMaxFreq, motionFreq);
+        orientationMaxFreq = Math.max(orientationMaxFreq, orientationFreq);
+
+        document.getElementById("motionFreq").innerHTML = motionFreq;
+        document.getElementById("motionMaxFreq").innerHTML = motionMaxFreq;
+        document.getElementById("orientationFreq").innerHTML = orientationFreq;
+        document.getElementById("orientationMaxFreq").innerHTML = orientationMaxFreq;
+
+        numberMotionEvents = 0;
+        numberOrientationEvents = 0;
+    }
+
+    var motionSupported="not supported";
+    var orientationSupported="not supported";
+
+    if (window.DeviceMotionEvent) {
+        window.addEventListener('devicemotion', onMotion)
+        motionSupported="supported";
+    }
+    document.getElementById("motionSupported").innerHTML = motionSupported;
+
+    if (window.DeviceOrientationEvent) {
+        window.addEventListener('deviceorientationabsolute', onOrientation, false);
+        orientationSupported = "supported";
+    }
+    document.getElementById("orientationSupported").innerHTML = orientationSupported;
+
+    setInterval(function(){updateMeasurements()}, updateIntervalDelaySec*1000);
+</script>
+
+</body>
+</html>

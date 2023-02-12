@@ -1,0 +1,46 @@
+
+<!DOCTYPE html>
+<html>
+<!--
+Created using JS Bin
+http://jsbin.com
+
+Copyright (c) 2023 by timv (http://jsbin.com/device-inertial-sensor-diagnostics/11/edit)
+
+Released under the MIT license: http://jsbin.mit-license.org
+-->
+<meta name="robots" content="noindex">
+<head>
+    <title>Device Motion/Orientation diagnostic measurements</title>
+</head>
+<body style="margin:15px; padding:10px">
+<div>
+Heading: <span id="heading">XX</span>  deg.
+</div>
+<script src="js/fulltilt.min.js" type="text/javascript"></script>
+<script type="text/javascript">
+
+    var promise = FULLTILT.getDeviceOrientation({'type': 'world'});
+    promise.then(function(orientationControl) {
+
+        orientationControl.listen(function() {
+
+            // Get latest screen-adjusted deviceorientation data
+            var screenAdjustedEvent = orientationControl.getScreenAdjustedEuler();
+
+            // Convert true north heading to radians
+            var heading = screenAdjustedEvent.alpha ; //* Math.PI / 180;
+
+
+            document.getElementById("heading").innerHTML =
+                heading.toFixed(3);
+
+        });
+
+    });
+
+
+</script>
+
+</body>
+</html>
