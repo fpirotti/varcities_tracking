@@ -15,7 +15,7 @@ self.addEventListener( "install" , ( event ) =>
 			"config.js",
             "index.html",
 			"manifest.json",
-			"style.css",
+			"custom.css",
 			"css/bootstrap.min.css",
 			"src/App.js",
 			"src/main.js",

@@ -1,3 +1,27 @@
+var verbose=true;
+var storedTheme = localStorage.getItem('theme');
+var getPreferredTheme = () => {
+    if (storedTheme) {
+        return storedTheme
+    }
+
+    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
+};
+
+var setTheme = function (theme) {
+    if (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+        document.documentElement.setAttribute('data-bs-theme', 'dark');
+        localStorage.setItem('theme', 'dark');
+        storedTheme='dark';
+       // $("#themeChbox").prop('checked', false);
+    } else {
+        document.documentElement.setAttribute('data-bs-theme', theme);
+        localStorage.setItem('theme', theme);
+        storedTheme=theme;
+       // $("#themeChbox").prop('checked', true);
+    }
+};
+getPreferredTheme();
 // Avoid `console` errors in browsers that lack a console.
 (function () {
     var method;
@@ -20,6 +44,9 @@
             console[method] = noop;
         }
     }
+
+    return 0;
+
 
 }());
 
@@ -103,7 +130,7 @@ updateLoggerAlert = function (text, typeAlert = 0, forceLog = 0) {
         var alert = document.createElement("div");
         alert.className = `alert  ${tt}`;
         //alert.id = "alertID";
-        alert.textContent = text;
+        alert.innerHTML = text;
         alert.addEventListener('click', function () {
             $(this).fadeOut(400)
         });
@@ -119,17 +146,24 @@ updateLoggerAlert = function (text, typeAlert = 0, forceLog = 0) {
 }
 
 saveToLocalStorage = function (uid, startTime, blob) {
-    var blobs = localStorage.getItem("blobs");
-    if (blobs === null) {
-        var blobs = {};
-        blobs[startTime] = blob;
-        localStorage.setItem('blobs', blobs);
-    } else {
-        var times2sync = Object.keys(blobs);
-        updateLogger(JSON.stringify(blobs[0]) + " tracks not uploaded yet");
-        blobs[startTime] = blob;
-        localStorage.setItem('blobs', blobs);
+    if(typeof(db)==='undefined'){
+        updateLoggerAlert(  "DB not available, please send this message to developer", 4);
+        return 0;
     }
+
+    const tx = db.transaction("photoes", "readwrite");
+    const store = tx.objectStore("photoes");
+
+    const IDBRequest  = store.put({blob: blob,   timetag: Date.now() });
+    IDBRequest.onerror = (event) => {
+        updateLoggerAlert(  `There has been an error with retrieving your data: ${IDBRequest.error}`, 3, 1);
+    };
+
+    IDBRequest.onsuccess = (event) => {
+        updateLoggerAlert(  "Photo saved to IndexDB, will be synced later.", 1);
+
+    };
+
     updateLogger("Track saved to localStorage for future upload. ");
 }
 
@@ -194,7 +228,6 @@ sendGeoJsonBlobDataToServerBuff = function (uid, startTime, buff) {
         error: function () {
             //start_tracking_button.click();
             resetTrackButton();
-            saveToLocalStorage(uid, startTime, buff);
             updateLoggerAlert("Server is not available - data stored locally. If this is unexpected, contact the developer.", 3, 1);
         }
     });
@@ -252,6 +285,71 @@ sendRTdata = function (uid, startTime, crd) {
     });
 }
 
+
+var runAjaxImageUpload = function(formData, that){
+
+    $.ajax({
+        type: "POST",
+        url: "webhook_data_download.php",
+        xhr: function () {
+            var myXhr = $.ajaxSettings.xhr();
+            if (myXhr.upload) {
+                myXhr.upload.addEventListener('progress', that.progressHandling, false);
+            }
+            return myXhr;
+        },
+
+        success: function (data) {
+            if(typeof(data.success)==="undefined"){
+                if(typeof(data.error)!=="undefined"){
+                    updateLoggerAlert(data.error, 3, 1);
+                } else {
+                    updateLoggerAlert("Uknown error" + JSON.stringify(data), 3, 1);
+                }
+            } else {
+                updateLoggerAlert(data.success, 1, 1);
+                let tx1 = db.transaction("photoes", "readwrite");
+                let store1 = tx1.objectStore("photoes");
+
+                try {
+                    let tt =  store1.delete( Number(data.timetag) );
+                  tt.onerror = function(){
+                      updateLoggerAlert(tt.error, 3, 1);
+                  }
+                  tt.onsuccess= function(){
+                      if(verbose)  console.log(tt);
+                      if(verbose)  updateLoggerAlert("Successfully deleted store with key:" + data.timetag, 1, 1);
+                  }
+                } catch (e) {
+                    updateLoggerAlert(e.message, 3, 1);
+                }
+                tx1.oncomplete = function(){
+                    if(verbose)  console.log(tx1);
+                    if(verbose) updateLoggerAlert("Successfully finished transaction over key:" + data.timetag, 1, 1);
+                }
+                tx1.onerror = function(){
+                    updateLoggerAlert("Error - " + tx1.error, 3, 1);
+                }
+            }
+
+
+
+            // your callback here
+        },
+        error: function (error) {
+            error.message = error.message || error.statusText;
+            updateLoggerAlert(error.message, 3,1);
+            alert(error.message);
+            // handle error
+        },
+        async: true,
+        data: formData,
+        cache: false,
+        contentType: false,
+        processData: false,
+        timeout: 60000
+    });
+}
 var Upload = function (file) {
     this.file = file;
 };
@@ -274,34 +372,7 @@ Upload.prototype.doUpload = function () {
     formData.append("upload_file", true);
     formData.append('uid', uid);
     formData.append('startTime', Date.now());
-
-    $.ajax({
-        type: "POST",
-        url: "/varcities/webhook_data_download.php",
-        xhr: function () {
-            var myXhr = $.ajaxSettings.xhr();
-            if (myXhr.upload) {
-                myXhr.upload.addEventListener('progress', that.progressHandling, false);
-            }
-            return myXhr;
-        },
-
-        success: function (data) {
-            updateLoggerErr(data);
-            // your callback here
-        },
-        error: function (error) {
-            updateLoggerErr(error.message);
-            alert(error.message);
-            // handle error
-        },
-        async: true,
-        data: formData,
-        cache: false,
-        contentType: false,
-        processData: false,
-        timeout: 60000
-    });
+    runAjaxImageUpload(formData, that);
 };
 
 Upload.prototype.progressHandling = function (event) {
@@ -555,3 +626,96 @@ const beforeUnloadListener = (event) => {
     event.preventDefault();
     return event.returnValue = '';
 };
+
+
+function onFs(fs){
+    fs.root.getDirectory('Documents', {create:true}, (directoryEntry) => {
+        //directoryEntry.isFile === false
+        //directoryEntry.isDirectory === true
+        //directoryEntry.name === 'Documents'
+        //directoryEntry.fullPath === '/Documents'
+
+    }, onError);
+
+};
+
+let dbname =  location.pathname.replace(/\//g, '') + "__cache__";
+let db;
+
+const request = indexedDB.open(dbname);
+
+if (navigator.storage && navigator.storage.estimate) {
+
+     navigator.storage.estimate().then(
+        function(quota){
+            const percentageUsed = (quota.usage / quota.quota) * 100;
+            console.log(`You've used ${percentageUsed}% of the available storage.`);
+            const remaining = quota.quota - quota.usage;
+            console.log(`You can write up to ${remaining/1000000} more Mbytes.`);
+            updateLoggerAlert(`You can write up to ${ (remaining/1000000000).toFixed(3) } more GBytes.`, 1);
+        }
+    );
+
+    request.onupgradeneeded = function() {
+        // The database did not previously exist, so create object stores and indexes.
+        const db = request.result;
+       // if( !db.objectStoreNames.contains("photoes") ){
+        try{
+            db.createObjectStore("photoes", {keyPath: "timetag"} );
+        }  catch (e) {
+            updateLoggerAlert("Store creation returned error:" + e, 3);
+        }
+      //  }
+    };
+
+
+    request.onsuccess = function() {
+        db = request.result;
+
+        if( !db.objectStoreNames.contains("photoes") ){
+
+           const deldb = indexedDB.deleteDatabase(dbname);
+            deldb.onsuccess = function(){
+                updateLoggerAlert("Successfully deleted DB, please restart APP!", 1);
+            }
+            deldb.onerror = function(){
+                updateLoggerAlert("Error on  deleted DB " + deldb.error +" - contact developer.", 1);
+            }
+          }
+
+        const tx = db.transaction("photoes", "readonly");
+        const store = tx.objectStore("photoes");
+        console.warn(store.getAll());
+        const str = store.getAll();
+        str.onsuccess = function(e) {
+            updateLoggerAlert("Store available with " + (str.result).length + ' items.'
+                , 1);
+
+            const tx = db.transaction("photoes", "readwrite");
+            const store = tx.objectStore("photoes");
+            for(var i=0; i<str.result.length; ++i){
+                if(verbose) console.warn( str.result[i].blob.size + "--" + JSON.stringify(str.result[i]) + "--"+i);
+                if( typeof(str.result[i].blob.size)==="undefined" ){
+                    store.delete( Number(str.result[i].timetag));
+                    continue;
+                }
+                var formData = new FormData();
+                formData.append("upfile", str.result[i].blob,  "name"+i );
+                formData.append("upload_file", true);
+                formData.append('uid', uid);
+                formData.append('startTime', str.result[i].timetag );
+                runAjaxImageUpload(formData, this);
+            }
+
+        }
+    };
+    request.onerror = function(e) {
+        updateLoggerAlert("DB error: "+e, 3);
+    };
+    request.onblocked = function(e) {
+        updateLoggerAlert("DB blocked: "+e, 3);
+    };
+} else {
+    updateLoggerAlert("You do not have IndexDB available. Storing photoes offline will not work!", 3)
+}
+

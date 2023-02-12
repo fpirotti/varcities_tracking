@@ -1,0 +1,165 @@
+#logger, #geolocContainer {
+
+    border:1px solid rgba(250,250,250,0.3);
+    padding:5px;
+    margin-top: -10px;
+    background-color: rgba(50, 50, 50, 0.2);
+    box-shadow:  2px 5px 5px rgba(200,200,200,0.3);
+    display: none;
+}
+#logger {
+    height: 120px;
+    overflow-y: auto;
+    max-height: 200px;
+}
+
+* {
+    user-select: none;
+    -webkit-tap-highlight-color: transparent;
+}
+
+*:focus {
+outline: none;
+}
+
+.toggle-button-cover {
+display: table-cell;
+position: relative;
+width: 164px;
+height: 70px;
+}
+.toggle-button-cover, ::after, ::before {
+    box-sizing: content-box;
+}
+
+
+.button-cover:before {
+counter-increment: button-counter;
+content: counter(button-counter);
+position: absolute;
+right: 0;
+bottom: 0;
+color: #d7e3e3;
+font-size: 12px;
+line-height: 1;
+padding: 5px;
+}
+
+.button-cover,
+.knobs,
+.layer {
+position: absolute;
+top: 0;
+right: 0;
+bottom: 0;
+left: 0;
+}
+
+.button {
+position: relative;
+
+margin: -20px auto 0 auto;
+overflow: hidden;
+    top: 40%;
+    height: 50px;
+}
+
+.button.r,
+.button.r .layer {
+border-radius: 100px;
+}
+
+.button.b2 {
+    border-radius: 6px;
+    border: 1px solid black;
+}
+
+.checkbox {
+position: relative;
+width: 100%;
+height: 100%;
+padding: 0;
+margin: 0;
+opacity: 0;
+cursor: pointer;
+z-index: 3;
+}
+
+.knobs {
+z-index: 2;
+}
+
+
+/* Button 14 */
+#lightmode .knobs:before,
+#lightmode .knobs:after,
+#lightmode .knobs span:before,
+#lightmode .knobs span:after {
+    position: absolute;
+    top: 0px;
+    width: 65px;
+    height: 24px;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: center;
+    line-height: 1;
+    padding: 9px 4px;
+    border-radius: 2px;
+    transition: 0.3s ease all;
+}
+
+#lightmode .knobs:before,
+#lightmode .knobs:after {
+    color: #4e4e4e;
+    z-index: 1;
+}
+
+#lightmode .knobs:before {
+    content: "LIGHT MODE";
+    left: 4px;
+}
+
+#lightmode .knobs:after {
+    content: "DARK MODE";
+    right: 4px;
+}
+
+#lightmode .knobs span {
+    top: 0;
+    left: 0;
+    display: block;
+    width: 100%;
+    height: 100%;
+}
+
+#lightmode .knobs span:before {
+    left: 4px;
+    top: -58px;
+    background-color: #282828;
+}
+
+#lightmode .knobs span:after {
+    top: 4px;
+    left: 82px;
+    background-color: #f4cc03;
+}
+
+#lightmode .knobs span:before,
+#lightmode .knobs span:after {
+    content: "";
+    width: 70px;
+    z-index: 2;
+}
+
+#lightmode .checkbox:checked + .knobs span:before {
+    top: 4px;
+}
+
+#lightmode .checkbox:checked + .knobs span:after {
+    top: -58px;
+}
+
+#lightmode  .layer {
+    background-color: #FFFFFFCC;
+    border-radius: 4px;
+}

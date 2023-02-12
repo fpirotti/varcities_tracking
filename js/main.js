@@ -2,6 +2,7 @@ if (localStorage.getItem("uid") === null) {
     localStorage.setItem('uid', (Math.random() + 1).toString(36).slice(2,12));
 }
 
+
 const uid = localStorage.getItem('uid'); //returns 4587ff526d
 var startTime;
 
@@ -101,7 +102,14 @@ $("#file-input").on("input", function (e) {
                         "Click HERE for help</a>", 3, 1);
 
                 } else {
-                    upload.doUpload();
+                   if(isOnline) {
+                       upload.doUpload();
+                   } else {
+                       updateLoggerAlert("You are currently not online....will save to DB and sync later",
+                           2,1);
+                       saveToLocalStorage(uid, startTime, file);
+
+                   }
                 }
             } else {
                 updateLoggerAlert("No  GPS data found in image !!! Please check your phone settings.", 3,1);
@@ -113,22 +121,27 @@ $("#file-input").on("input", function (e) {
 
 
 
-var slider = document.getElementById("accthresh");
-var output = document.getElementById("accthreshvalue");
-output.innerHTML = slider.value; // Display the default slider value
+//var slider = document.getElementById("accthresh");
+//var output = document.getElementById("accthreshvalue");
+//output.innerHTML = slider.value; // Display the default slider value
 // Update the current slider value (each time you drag the slider handle)
-slider.oninput = function () {
-    output.innerHTML = this.value;
-}
+//slider.oninput = function () {
+//    output.innerHTML = this.value;
+//}
 
+if(window.location.pathname.includes('fireres')){
+    $("#start_demo").hide();
+    $("#geolocContainerButton").hide();
+    $("#file-button").height="300px";
+}
 
 var slider2 = document.getElementById("geoloc_freq");
 var output2 = document.getElementById("geoloc_freq_value");
-output2.innerHTML = slider2.value; // Display the default slider value
+//output2.innerHTML = slider2.value; // Display the default slider value
 // Update the current slider value (each time you drag the slider handle)
-slider2.oninput = function () {
-    output2.innerHTML = this.value;
-}
+//slider2.oninput = function () {
+//    output2.innerHTML = this.value;
+//}
 
 
 let is_running = 0;

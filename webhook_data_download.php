@@ -1,13 +1,15 @@
 <?php
 require 'functions.php';
-header('Content-Type: text/plain; charset=utf-8');
 
+header('Content-type: application/json');
 $dirname = "incoming/imgs/". $_POST['uid']   ;
 
 
 if( !is_dir($dirname)){
   if(!mkdir($dirname, 0777, True)){
-    echo  $dirname . " not able to create this directory.";
+
+    echo json_encode( array( "error" =>  $dirname . " not able to create this directory." ) );
+
     exit(0);
   }
 }
@@ -81,21 +83,19 @@ try {
         $tmpfname,
         $ext
     );
+
     if (!move_uploaded_file( $_FILES['upfile']['tmp_name'],$tmpfname ) ) {
         throw new RuntimeException('Failed to move uploaded file.');
     }
 
+    chmod($tmpfname, 01777);
 
-    chmod($tmpfname, 0777);
-
-    echo "Image uploaded successfully to server, OPEN IN <a href='https://earth.google.com/web/@"  .  $imgLat . ",".$imgLng."' target='_blank'> " .
+    echo json_encode( array("success" => "Image <a href='". $tmpfname ."'>". basename($tmpfname) ."</a> uploaded successfully to server, OPEN IN <a href='https://earth.google.com/web/@"  .  $imgLat . ",".$imgLng."' target='_blank'> " .
     "Google Earth</a> | " .
     "<a href='https://www.google.com/maps/search/?api=1&query="  .  $imgLat . ",".$imgLng."' target='_blank'> "  .
-    "Google Maps</a>";
+    "Google Maps</a>", "timetag"=>$_POST['startTime'] ) );
 
 } catch (RuntimeException $e) {
-
-    echo $e->getMessage();
-
+    echo json_encode( array( "error" => $e->getMessage()  ) );
 }
 ?>

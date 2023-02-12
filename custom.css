@@ -1,0 +1,17 @@
+
+.container::before {
+    background: url('img/white2.svg') ;
+    content: "";
+    position: absolute;
+    top: 0;
+    left: 0;
+    padding: 30px;
+    width: 100%;
+    height: 100%;
+    opacity: .05;
+    z-index: -1;
+    background-attachment: fixed;
+    background-position: 5px 65px;
+    background-repeat: no-repeat;
+    background-size: contain;
+}

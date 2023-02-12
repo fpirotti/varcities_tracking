@@ -3,7 +3,7 @@ var serviceWorkerRegistration = null;
 var app = new App();
 
 
-function init()
+function init(verbose=true)
 {
     // service worker
     if ( "serviceWorker" in navigator ) 
@@ -11,12 +11,17 @@ function init()
         // register the service worker
         navigator.serviceWorker.register( "sw.js" ).then( ( reg ) =>
         {
-            console.log( "service worker has been registered successfully" );
+            if(verbose) updateLoggerAlert( "service worker has been registered successfully" );
             serviceWorkerRegistration = reg;
+            return reg.sync.getTags();
         }
-        ).catch( ( error ) =>
+        ).then(function(tags) {
+            if (tags.includes('syncTest')) {
+                if(verbose)  updateLoggerAlert("There's already a background sync pending", 2);
+            }
+        }).catch( ( error ) =>
         {
-            console.log( "failed to register service worker" , error );
+            updateLoggerAlert( "failed to register service worker: " + error, 3 );
         });
     }
 
