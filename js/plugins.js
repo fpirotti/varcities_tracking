@@ -1,23 +1,25 @@
 var verbose=true;
 var storedTheme = localStorage.getItem('theme');
+var storedThemeIsDark = false;
+if(storedTheme=='dark') storedThemeIsDark=true;
 var getPreferredTheme = () => {
-    if (storedTheme) {
-        return storedTheme
+    if (!storedThemeIsDark) {
+        toggleTheme();
     }
-
-    return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light'
 };
 
-var setTheme = function (theme) {
-    if (theme === 'auto' && window.matchMedia('(prefers-color-scheme: dark)').matches) {
+var toggleTheme = function () {
+    if (!storedThemeIsDark) {
         document.documentElement.setAttribute('data-bs-theme', 'dark');
         localStorage.setItem('theme', 'dark');
         storedTheme='dark';
+        storedThemeIsDark=true;
        // $("#themeChbox").prop('checked', false);
     } else {
-        document.documentElement.setAttribute('data-bs-theme', theme);
-        localStorage.setItem('theme', theme);
-        storedTheme=theme;
+        document.documentElement.setAttribute('data-bs-theme', 'light');
+        localStorage.setItem('theme', 'light');
+        storedTheme='light';
+        storedThemeIsDark=false;
        // $("#themeChbox").prop('checked', true);
     }
 };
@@ -143,6 +145,40 @@ updateLoggerAlert = function (text, typeAlert = 0, forceLog = 0) {
         }, 10000);
     }
 
+}
+
+deleteElementFromLocalStorage = function(idx){
+    let tx1 = db.transaction("photoes", "readwrite");
+    let store1 = tx1.objectStore("photoes");
+
+    const objectStoreRequest = store1.get(Number(idx));
+    objectStoreRequest.onsuccess = (event) => {
+        // report the success of our request
+        const myRecord = objectStoreRequest.result;
+    };
+    try {
+        let tt =  store1.delete( Number(idx) );
+        tt.onerror = function(){
+            updateLoggerAlert(tt.error, 3, 1);
+        }
+        tt.onsuccess= function(){
+            if(verbose)  console.log(tt);
+            if(verbose)  updateLoggerAlert("Successfully deleted store with key:" + idx, 1, 1);
+        }
+        tt.onsuccess= function(){
+            if(verbose)  console.log(tt);
+            if(verbose)  updateLoggerAlert("Successfully deleted store with key:" + idx, 1, 1);
+        }
+    } catch (e) {
+        updateLoggerAlert(e.message, 3, 1);
+    }
+    tx1.oncomplete = function(){
+        if(verbose)  console.log(tx1);
+        if(verbose) updateLoggerAlert("Successfully finished transaction over key:" + idx, 1, 1);
+    }
+    tx1.onerror = function(){
+        updateLoggerAlert("Error - " + tx1.error, 3, 1);
+    }
 }
 
 saveToLocalStorage = function (uid, startTime, blob) {
@@ -308,33 +344,13 @@ var runAjaxImageUpload = function(formData, that){
                 }
             } else {
                 updateLoggerAlert(data.success, 1, 1);
-                let tx1 = db.transaction("photoes", "readwrite");
-                let store1 = tx1.objectStore("photoes");
-
-                try {
-                    let tt =  store1.delete( Number(data.timetag) );
-                  tt.onerror = function(){
-                      updateLoggerAlert(tt.error, 3, 1);
-                  }
-                  tt.onsuccess= function(){
-                      if(verbose)  console.log(tt);
-                      if(verbose)  updateLoggerAlert("Successfully deleted store with key:" + data.timetag, 1, 1);
-                  }
-                } catch (e) {
-                    updateLoggerAlert(e.message, 3, 1);
-                }
-                tx1.oncomplete = function(){
-                    if(verbose)  console.log(tx1);
-                    if(verbose) updateLoggerAlert("Successfully finished transaction over key:" + data.timetag, 1, 1);
-                }
-                tx1.onerror = function(){
-                    updateLoggerAlert("Error - " + tx1.error, 3, 1);
+                if(typeof(data.timetag)!=="undefined"){
+                    deleteElementFromLocalStorage(data.timetag);
+                } else {
+                    updateLoggerAlert("No timetag error" + JSON.stringify(data), 3, 1);
                 }
             }
 
-
-
-            // your callback here
         },
         error: function (error) {
             error.message = error.message || error.statusText;
@@ -644,78 +660,100 @@ let db;
 
 const request = indexedDB.open(dbname);
 
-if (navigator.storage && navigator.storage.estimate) {
+const sync = function(){
 
-     navigator.storage.estimate().then(
-        function(quota){
-            const percentageUsed = (quota.usage / quota.quota) * 100;
-            console.log(`You've used ${percentageUsed}% of the available storage.`);
-            const remaining = quota.quota - quota.usage;
-            console.log(`You can write up to ${remaining/1000000} more Mbytes.`);
-            updateLoggerAlert(`You can write up to ${ (remaining/1000000000).toFixed(3) } more GBytes.`, 1);
+    if(!isOnline){
+        updateLoggerAlert("Phone not online, will not sync", 2);
+        return 0;
+    }
+
+    const tx = db.transaction("photoes", "readonly");
+    const store = tx.objectStore("photoes");
+    console.warn(store.getAll());
+    const str = store.getAll();
+    str.onsuccess = function(e) {
+        var addedstr = "";
+        if((str.result).length>0){
+            addedstr=" will sync!";
+        } else {
+            updateLoggerAlert("Nothing to sync", 1);
+            return 0;
         }
-    );
+        updateLoggerAlert("Store available with " + (str.result).length + ' items.' + addedstr
+            , 1);
 
-    request.onupgradeneeded = function() {
-        // The database did not previously exist, so create object stores and indexes.
-        const db = request.result;
-       // if( !db.objectStoreNames.contains("photoes") ){
-        try{
-            db.createObjectStore("photoes", {keyPath: "timetag"} );
-        }  catch (e) {
-            updateLoggerAlert("Store creation returned error:" + e, 3);
-        }
-      //  }
-    };
-
-
-    request.onsuccess = function() {
-        db = request.result;
-
-        if( !db.objectStoreNames.contains("photoes") ){
-
-           const deldb = indexedDB.deleteDatabase(dbname);
-            deldb.onsuccess = function(){
-                updateLoggerAlert("Successfully deleted DB, please restart APP!", 1);
-            }
-            deldb.onerror = function(){
-                updateLoggerAlert("Error on  deleted DB " + deldb.error +" - contact developer.", 1);
-            }
-          }
-
-        const tx = db.transaction("photoes", "readonly");
+        const tx = db.transaction("photoes", "readwrite");
         const store = tx.objectStore("photoes");
-        console.warn(store.getAll());
-        const str = store.getAll();
-        str.onsuccess = function(e) {
-            updateLoggerAlert("Store available with " + (str.result).length + ' items.'
-                , 1);
+        for(var i=0; i<str.result.length; ++i){
+            if(verbose) console.warn( str.result[i].blob.size + "--" + JSON.stringify(str.result[i]) + "--"+i);
+            if( typeof(str.result[i].blob.size)==="undefined" ){
+                store.delete( Number(str.result[i].timetag));
+                continue;
+            }
+            var formData = new FormData();
+            formData.append("upfile", str.result[i].blob,  "name"+i );
+            formData.append("upload_file", true);
+            formData.append('uid', uid);
+            formData.append('startTime', str.result[i].timetag );
+            runAjaxImageUpload(formData, this);
+        }
+    }
+}
+const syncPrep = function(){
 
-            const tx = db.transaction("photoes", "readwrite");
-            const store = tx.objectStore("photoes");
-            for(var i=0; i<str.result.length; ++i){
-                if(verbose) console.warn( str.result[i].blob.size + "--" + JSON.stringify(str.result[i]) + "--"+i);
-                if( typeof(str.result[i].blob.size)==="undefined" ){
-                    store.delete( Number(str.result[i].timetag));
-                    continue;
+    if (navigator.storage && navigator.storage.estimate) {
+
+        navigator.storage.estimate().then(
+            function(quota){
+                const percentageUsed = (quota.usage / quota.quota) * 100;
+                console.log(`You've used ${percentageUsed}% of the available storage.`);
+                const remaining = quota.quota - quota.usage;
+                console.log(`You can write up to ${remaining/1000000} more Mbytes.`);
+                updateLoggerAlert(`You can write up to ${ (remaining/1000000000).toFixed(3) } more GBytes.`, 1);
+            }
+        );
+
+        request.onupgradeneeded = function() {
+            // The database did not previously exist, so create object stores and indexes.
+            db = request.result;
+            if(verbose) updateLoggerAlert("Upgrade DB", 1);
+            // if( !db.objectStoreNames.contains("photoes") ){
+            try{
+                db.createObjectStore("photoes", {keyPath: "timetag"} );
+            }  catch (e) {
+                updateLoggerAlert("Store creation returned error:" + e, 3);
+            }
+            //  }
+        };
+
+
+        request.onsuccess = function() {
+            db = request.result;
+
+            if( !db.objectStoreNames.contains("photoes") ){
+
+                const deldb = indexedDB.deleteDatabase(dbname);
+                deldb.onsuccess = function(){
+                    updateLoggerAlert("Successfully deleted DB, please restart APP!", 1);
                 }
-                var formData = new FormData();
-                formData.append("upfile", str.result[i].blob,  "name"+i );
-                formData.append("upload_file", true);
-                formData.append('uid', uid);
-                formData.append('startTime', str.result[i].timetag );
-                runAjaxImageUpload(formData, this);
+                deldb.onerror = function(){
+                    updateLoggerAlert("Error on  deleted DB " + deldb.error +" - contact developer.", 1);
+                }
             }
 
-        }
-    };
-    request.onerror = function(e) {
-        updateLoggerAlert("DB error: "+e, 3);
-    };
-    request.onblocked = function(e) {
-        updateLoggerAlert("DB blocked: "+e, 3);
-    };
-} else {
-    updateLoggerAlert("You do not have IndexDB available. Storing photoes offline will not work!", 3)
+        };
+
+        request.onerror = function(e) {
+            updateLoggerAlert("DB error: "+e, 3);
+        };
+
+        request.onblocked = function(e) {
+            updateLoggerAlert("DB blocked: "+e, 3);
+        };
+
+    } else {
+        updateLoggerAlert("You do not have IndexDB available. Storing photoes offline will not work!", 3)
+    }
 }
 
+syncPrep();

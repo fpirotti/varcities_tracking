@@ -30,6 +30,7 @@ function init(verbose=true)
     {
         console.log( "online mode" );
         isOnline=true;
+        sync();
     }
     else 
     {
@@ -42,6 +43,8 @@ function init(verbose=true)
     {
         console.log( "online event" );
         isOnline=true;
+
+        sync();
         //updateLogger("You are online");
     });
 

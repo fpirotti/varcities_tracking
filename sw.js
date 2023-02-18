@@ -17,13 +17,15 @@ self.addEventListener( "install" , ( event ) =>
 			"manifest.json",
 			"custom.css",
 			"css/bootstrap.min.css",
+			"css/style.css",
 			"src/App.js",
 			"src/main.js",
 			"js/vendor/modernizr-2.8.3.min.js",
-			"js/vendor/jquery-2.1.3.min.js",
+			"js/vendor/jquery-3.6.3.min.js",
 			"js/vendor/long-press-event.min.js",
 			"js/jquery.exif.js",
-			"js/plugins.js", 
+			"js/plugins.js",
+			"js/popper.js",
 			"js/main.js",
 			"img/favicon.ico",
 			"img/maskable_icon_x128.png", 
@@ -57,7 +59,7 @@ self.addEventListener( "fetch" , ( event ) =>
     // cache first caching - only go to the network if no cache match was found, other caching strategies can be used too
     event.respondWith( caches.match( event.request ).then( ( response ) => 
     {
-      console.log( "sw > cache first" );
+      console.log( "sw > cache first" + location.pathname );
         return response || fetch( event.request );
     }));
 });

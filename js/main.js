@@ -12,6 +12,9 @@ const options = {
     maximumAge: 0
 };
 
+$('#lightmode').click(function() {
+    toggleTheme( );
+});
 
 var utf8EncodedString = new TextEncoder("utf-8").encode(uid);
 
@@ -48,7 +51,7 @@ const geojson = {
 
 
 let accthreshold = document.getElementById('accthresh');
-updateLogger("Welcome, your unique id is: " + uid, 'logger', newline = false);
+updateLogger("Welcome, your unique id is: <a href='mailto:cirgeo@unipd.it;'>" + uid+'</a>', 'logger', newline = false);
 const getmotion = false;
 const getlocation = true;
 const maxNumCoords =  60*60*6; // six hours max
@@ -133,6 +136,7 @@ if(window.location.pathname.includes('fireres')){
     $("#start_demo").hide();
     $("#geolocContainerButton").hide();
     $("#file-button").height="300px";
+    $(".onlyfireres").show();
 }
 
 var slider2 = document.getElementById("geoloc_freq");
