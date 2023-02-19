@@ -21,6 +21,7 @@ var utf8EncodedString = new TextEncoder("utf-8").encode(uid);
 
 const buffer = new ArrayBuffer(10+8+4+4+4+4); // 10=uid, 8=starttime timestamp long uint, 4x4 are lat long acc elapsed time
 
+var orientationcontrolG;
 
 const uidBuff = new Uint8Array(buffer, 24, 10);
 const starTimeBuff = new BigUint64Array(buffer, 0, 1);
@@ -174,21 +175,52 @@ navigator.permissions.query({name:'geolocation'}).then((result) => {
     };
 });
 
+window.addEventListener("compassneedscalibration", function(event) {
+    alert('Your compass needs calibrating! Wave your device in a figure-eight motion');
+    event.preventDefault();
+}, true);
 
 $('#file-button')[0].addEventListener('long-press', function(e) {
-    $('#file-input').click();
+    $("#geolocsInPhoto").show();
+    //$('#file-input').click();
+    initPhoto();
 });
 
 $('#file-button').click(function () {
-    $('#file-input').click();
+    $("#photoarea").show();
+    initPhoto();
+    interval = navigator.geolocation.watchPosition(successLocationListenCamera, errorLocationListen, options);
+    var devorientationFullTilt = FULLTILT.getDeviceOrientation({'type': 'world'});
+
+    devorientationFullTilt.then(function(orientationControl) {
+        orientationcontrolG = orientationControl;
+        orientationControl.listen(function() {
+            // Get latest screen-adjusted deviceorientation data
+            var screenAdjustedEvent = orientationControl.getScreenAdjustedEuler();
+            var heading = screenAdjustedEvent.alpha ; //* Math.PI / 180;
+            updateFieldIfNotNull('zenith',  Math.abs(screenAdjustedEvent.gamma), 0);
+            updateFieldIfNotNull('azimuth', heading, 0);
+        });
+    }).catch(function(message) {
+        updateLoggerAlert(message, 3,1);
+        console.error(message);
+    });
+    //$('#file-input').click();
 });
+$('#outputPhoto').on('dblclick doubletap',function () {
+    $("#photoarea").hide();
+    navigator.geolocation.clearWatch(interval);
+    orientationcontrolG.stop();
+    //$('#file-input').click();
+});
+
 start_tracking_button.addEventListener('long-press', function(e) {
 
     removeEventListener("beforeunload", beforeUnloadListener, {capture: true});
 
-    $('#file-button').click(function () {
-        $('#file-input').click();
-    });
+    // $('#file-button').click(function () {
+    //     $('#file-input').click();
+    // });
     // stop the event from bubbling up
     e.preventDefault()
     navigator.geolocation.clearWatch(interval);
@@ -244,6 +276,8 @@ start_tracking_button.addEventListener('long-press', function(e) {
 resetTrackButton = function(){
     removeEventListener("beforeunload", beforeUnloadListener, {capture: true});
 
+    navigator.geolocation.clearWatch(interval);
+
     $('#file-button').click(function () {
         $('#file-input').click();
     });
@@ -274,7 +308,7 @@ start_tracking_button.onclick = function (e) {
     } else {
 
         $('#file-button').off('click');
-        $('#file-button').click(function () {
+        $('#file-button').on('click', function () {
             updateLoggerAlert("To take photo while tracking, keep button pressed for 2 seconds...",2);
         });
         addEventListener("beforeunload", beforeUnloadListener, {capture: true});
@@ -292,7 +326,7 @@ start_tracking_button.onclick = function (e) {
             );
             updateLogger('Wake Lock is active!');
         } catch (err) {
-            updateLogger( `Wke lock error ${err.name}, ${err.message}`);
+            updateLogger( `Wake lock error ${err.name}, ${err.message}`);
         }
 
         if (getmotion) window.addEventListener("devicemotion", handleMotion);

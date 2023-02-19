@@ -64,7 +64,7 @@
 
 
         <div class="row align-items-center text-center">
-            <div class="col w-50" >
+            <div class="col col-md-3" >
                 <div class="btn  btn-outline-secondary btn-lg align-self-center w-100" id="lightmode">
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" class="bi bi-lightbulb" viewBox="0 0 16 16">
                         <path d="M2 6a6 6 0 1 1 10.174 4.31c-.203.196-.359.4-.453.619l-.762 1.769A.5.5 0 0 1 10.5 13a.5.5 0 0 1 0 1 .5.5 0 0 1 0 1l-.224.447a1 1 0 0 1-.894.553H6.618a1 1 0 0 1-.894-.553L5.5 15a.5.5 0 0 1 0-1 .5.5 0 0 1 0-1 .5.5 0 0 1-.46-.302l-.761-1.77a1.964 1.964 0 0 0-.453-.618A5.984 5.984 0 0 1 2 6zm6-5a5 5 0 0 0-3.479 8.592c.263.254.514.564.676.941L5.83 12h4.342l.632-1.467c.162-.377.413-.687.676-.941A5 5 0 0 0 8 1z"/>
@@ -72,7 +72,7 @@
                 </div>
             </div>
 
-            <div class="col  w-50" >
+            <div class="col  col-md-3" >
                 <a class="btn  btn-outline-secondary btn-lg align-self-center w-100" href="README.html"
                    id="manual"   target="_blank">
                     <svg class="bi bi-info-circle-fill" fill="currentColor" height="24" viewBox="0 0 16 16"
@@ -81,10 +81,7 @@
                     </svg>
                 </a>
             </div>
-
-        </div>
-
-        <div class="col-md-12"  >
+            <div class="col col-md-6"  >
 
                   <span class="btn btn-lg btn-outline-secondary w-100" onclick="$('#logger').toggle()"
                         style="white-space: nowrap">
@@ -96,9 +93,11 @@
                     </svg>
 
                     </span>
-                    <span>LOG MESSAGES</span>
+                    <span>LOG</span>
                 </span>
+            </div>
         </div>
+
         <div class="col-md-12" id="logger"></div>
         <span class="btn btn-lg btn-outline-secondary btn-block" id="geolocContainerButton"
               onclick="$('#geolocContainer').toggle()">
@@ -128,23 +127,23 @@
 
             <div class="row">
                 <div class="col-md-6 ">
-                    Lat: <span id="geoloc_lat">0</span><span> °</span>
+                    Lat: <span class="geoloc_lat">0</span><span> °</span>
                 </div>
                 <div class="col-md-6 ">
-                    Long: <span id="geoloc_lng">0</span><span> °</span>
+                    Long: <span class="geoloc_lng">0</span><span> °</span>
                 </div>
             </div>
             <div class="row">
                 <div class="col-md-6 ">
-                    Acc: <span id="geoloc_acc">0</span><span> m</span>
+                    Acc: <span class="geoloc_acc">0</span><span> m</span>
                 </div>
                 <div class="col-md-6 ">
-                    Num events: <span id="geoloc_n">0</span><span id="errorsLocs"></span><span></span>
+                    Num events: <span class="geoloc_n">0</span><span class="errorsLocs"></span><span></span>
                 </div>
             </div>
             <div class="row">
-                <div class="col-md-6">Azimuth: <span id="azimuth">0</span><span> °</span></div>
-                <div class="col-md-6">Elevation: <span id="zenith">0</span><span> °</span></div>
+                <div class="col-md-6">Azimuth: <span class="azimuth">0</span><span> °</span></div>
+                <div class="col-md-6">Elevation: <span class="zenith">0</span><span> °</span></div>
             </div>
 
         </div>
@@ -162,12 +161,12 @@
             <path d="M8 11a2.5 2.5 0 1 1 0-5 2.5 2.5 0 0 1 0 5zm0 1a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7zM3 6.5a.5.5 0 1 1-1 0 .5.5 0 0 1 1 0z"/>
         </svg>
     </span>
-        <input href="#" id="file-input" style="display:none;" type="file">
+<!--        <input href="#" id="file-input" style="display:none;" type="file">-->
 
 
         <select class="form-select form-select-lg  mb-3 onlyfireres" style="display: none;" aria-label=".form-select-lg Select project">
-            <option value="1"></option>
-            <option value="1">FIRE-RES</option>
+            <option value="0">Choose Project</option>
+            <option value="fireres">FIRE-RES</option>
             <option value="2">FIRE2</option>
             <option value="3">FIRE3</option>
         </select>
@@ -181,18 +180,47 @@
             </div>
         </div>
 
-        <div class="row">
+        <div class="row" id="photoarea" style="display: none;" >
+
+            <div class="camera" id="startbutton" style="width: 340px;  display: inline-block;">
+                <video id="video" style="border: 1px solid black; box-shadow: 2px 2px 3px black; width: 320px;  height: 240px;">Video stream not available.</video>
+            </div>
+            <canvas id="canvas" style="display: none;"> </canvas>
+            <div id="outputPhoto" style="  width: 340px; display: inline-block;  vertical-align: top;">
+                <img id="photo"
+                     style="border: 1px solid black; box-shadow: 2px 2px 3px black; width: 320px; height: 240px;" alt="The screen capture will appear in this box." />
+
+                <div id="geolocsInPhoto"
+                     style="     background: rgba(0,0,0,30%);
+    display: flex; position: relative;  flex-wrap: nowrap;  z-index: 33333;
+    bottom: 52px;   left: 2px; padding: 3px;
+    text-shadow: 0px 0px 3px black;  margin: -2px; color: white;" >
+                    <div  >
+                        <div  >
+                            <span class="geoloc_lat">0</span><span> °</span>,
+                            <span class="geoloc_lng">0</span><span> °</span>&nbsp;|&nbsp;
+                            A: <span class="geoloc_acc">0</span><span> m</span>
+                        </div>
+                        <div  >
+                            Azimuth:<span class="azimuth">0</span><span> °</span>&nbsp;|&nbsp;
+                            Elevation: <span class="zenith">0</span><span> °</span>
+                        </div>
+                    </div>
+                </div>
+
+
+            </div>
 
         </div>
 
     </div>
-
 
 </main>
 
 <!-- Add your site or application content here -->
 
 <script src="js/vendor/jquery-3.6.3.min.js"></script>
+<script src="js/fulltilt.min.js"></script>
 <script src="js/jquery.exif.js"></script>
 <script src="js/plugins.js?v=0rewd"></script>
 <script src="js/main.js?v=1d"></script>

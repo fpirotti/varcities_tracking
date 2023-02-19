@@ -252,38 +252,28 @@ sendGeoJsonBlobDataToServerBuff = function (uid, startTime, buff) {
     const blob = new Blob([uid, starTimeBuff, buff], {type: "application/octet-stream"});
 
 
+
     var promise = $.ajax({
         type: 'POST',
         url: 'https://www.cirgeo.unipd.it/varcities/webhook_data_collector_blob_buff.php',
         data: blob,
         contentType: false, //'application/octet-stream',
-        processData: false,
-        success: function (data) {
-            //updateLogger("Server  available - data sent.");
-        },
-        error: function () {
-            //start_tracking_button.click();
-            resetTrackButton();
-            updateLoggerAlert("Server is not available - data stored locally. If this is unexpected, contact the developer.", 3, 1);
+        processData: false
+    }) ;
+
+
+    promise.done(function (ret) {
+
+        if(typeof(ret.error)!=='undefined'){
+            updateLoggerAlert("Data successfully uploaded but error writing to file." + ret.error, 3, 1);
         }
+        updateLoggerAlert("Data successfully uploaded." + JSON.stringify(ret), 1, 1);
+
+        resetTrackButton();
     });
-
-
-    promise.error(function (err) {
+    promise.fail(function (err) {
         updateLoggerAlert("GeoJSON error uploading data to server." + JSON.stringify(err), 3, 1);
         resetTrackButton();
-
-    });
-
-    promise.success(function (data) {
-
-        if (data.error !== undefined) {
-            updateLoggerAlert("Error uploading GeoJSON to server: " + data.error, 3, 1);
-        } else {
-            updateLoggerAlert("GeoJSON successfully uploaded to server.", 1);
-        }
-        resetTrackButton();
-
     });
 
 }
@@ -314,10 +304,14 @@ sendRTdata = function (uid, startTime, crd) {
     });
 
 
-    promise.success(function (data) {
+    promise.done(function (data) {
         if (data.error !== undefined) {
             updateLoggerErr(data.error + " - error on real time update response, will terminate real time streaming.");
         }
+    });
+
+    promise.fail(function (err) {
+        resetTrackButton();
     });
 }
 
@@ -406,10 +400,10 @@ Upload.prototype.progressHandling = function (event) {
 
 function updateFieldIfNotNull(fieldName, value, precision = 10, force = false) {
     if (force) {
-        document.getElementById(fieldName).innerHTML = value.toFixed(precision);
+        $('.'+fieldName).html(value.toFixed(precision));
     } else {
         if (value != null && visible)
-            document.getElementById(fieldName).innerHTML = value.toFixed(precision);
+            $('.'+fieldName).html(value.toFixed(precision));
     }
 }
 
@@ -454,6 +448,20 @@ function handleMotion(event) {
 //  incrementEventCount();
 }
 
+function successLocationListenCamera(pos) {
+
+
+    const crd = pos.coords;
+    crd.time = Date.now() - startTime;
+    updateFieldIfNotNull('geoloc_lat', crd.latitude, 8);
+    updateFieldIfNotNull('geoloc_lng', crd.longitude, 8);
+    updateFieldIfNotNull('geoloc_acc', crd.accuracy, 1);
+    if(crd.accuracy>10){
+        $('.geoloc_acc').css("color", "red");
+    } else {
+        $('.geoloc_acc').css("color", "red");
+    }
+}
 
 function successLocationListen(pos) {
     if (coordCounter > maxNumCoords) {
@@ -757,3 +765,153 @@ const syncPrep = function(){
 }
 
 syncPrep();
+
+
+
+const initPhoto = function() {
+    // The width and height of the captured photo. We will set the
+    // width to the value defined here, but the height will be
+    // calculated based on the aspect ratio of the input stream.
+
+    const width = 320; // We will scale the photo width to this
+    let height = 0; // This will be computed based on the input stream
+
+    // |streaming| indicates whether or not we're currently streaming
+    // video from the camera. Obviously, we start at false.
+
+    let streaming = false;
+
+    // The various HTML elements we need to configure or control. These
+    // will be set by the startup() function.
+
+    let video = null;
+    let canvas = null;
+    let photo = null;
+    let startbutton = null;
+
+    function stopVideo(stream) {
+        stream.getTracks().forEach(function(track) {
+            if (track.readyState == 'live' && track.kind === 'video') {
+                track.stop();
+            }
+        });
+    }
+    function showViewLiveResultButton() {
+        if (window.self !== window.top) {
+            // Ensure that if our document is in a frame, we get the user
+            // to first open it in its own tab or window. Otherwise, it
+            // won't be able to request permission for camera access.
+            document.querySelector(".contentarea").remove();
+            const button = document.createElement("button");
+            button.textContent = "View live result of the example code above";
+            document.body.append(button);
+            button.addEventListener("click", () => window.open(location.href));
+            return true;
+        }
+        return false;
+    }
+
+    function startup() {
+        if (showViewLiveResultButton()) {
+            return;
+        }
+        video = document.getElementById("video");
+        canvas = document.getElementById("canvas");
+        photo = document.getElementById("photo");
+        startbutton = document.getElementById("startbutton");
+
+        let streamv = false;
+        navigator.mediaDevices
+            .getUserMedia({  video: {
+                    facingMode: 'environment'
+                }, audio: false })
+            .then((stream) => {
+                streamv=stream;
+                video.srcObject = stream;
+                video.play();
+            })
+            .catch((err) => {
+                console.error(`An error occurred: ${err}`);
+            });
+
+        video.addEventListener(
+            "canplay",
+            (ev) => {
+                if (!streaming) {
+                    height = video.videoHeight / (video.videoWidth / width);
+
+                    // Firefox currently has a bug where the height can't be read from
+                    // the video, so we will make assumptions if this happens.
+
+                    if (isNaN(height)) {
+                        height = width / (4 / 3);
+                    }
+
+                    video.setAttribute("width", width);
+                    video.setAttribute("height", height);
+                    canvas.setAttribute("width", width);
+                    canvas.setAttribute("height", height);
+                    streaming = true;
+                }
+            },
+            false
+        );
+
+        startbutton.addEventListener(
+            "click",
+            (ev) => {
+                takepicture();
+                ev.preventDefault();
+            },
+            false
+        );
+
+        photo.addEventListener(
+            "dblclick",
+            (ev) => {
+                stopVideo(streamv);
+                ev.preventDefault();
+            },
+            false
+        );
+
+        clearphoto();
+    }
+
+    // Fill the photo with an indication that none has been
+    // captured.
+
+    function clearphoto() {
+        const context = canvas.getContext("2d");
+        context.fillStyle = "#AAA";
+        context.fillRect(0, 0, canvas.width, canvas.height);
+
+        const data = canvas.toDataURL("image/png");
+        photo.setAttribute("src", data);
+    }
+
+    // Capture a photo by fetching the current contents of the video
+    // and drawing it into a canvas, then converting that to a PNG
+    // format data URL. By drawing it on an offscreen canvas and then
+    // drawing that to the screen, we can change its size and/or apply
+    // other changes before drawing it.
+
+    function takepicture() {
+        const context = canvas.getContext("2d");
+        if (width && height) {
+            canvas.width = width;
+            canvas.height = height;
+            context.drawImage(video, 0, 0, width, height);
+
+            const data = canvas.toDataURL("image/jpg");
+            photo.setAttribute("src", data);
+        } else {
+            clearphoto();
+        }
+    }
+
+    // Set up our event listener to run the startup process
+    // once loading is complete.
+    //window.addEventListener("load", startup, false);
+    startup();
+};
