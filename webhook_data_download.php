@@ -12,17 +12,34 @@ if( !is_dir($dirname)){
 
     exit(0);
   }
+
+    $old = umask(0);
+    chmod($dirname, 0777);
+    umask($old);
+
 }
 
 $tim = Date($_POST['startTime']/1000);
 $tdate = date('Ymd_His', $_POST['startTime']/1000);
 
 $tmpfname = $dirname . "/" . $tdate;
-
+$tmpfnamet = $tmpfname.'__.jpg';
 
 
 
 try {
+
+    if (!isset($_POST['lat']) || !isset($_POST['lng'])  || !isset($_POST['azimuth'])  || !isset($_POST['zenith']) ) {
+        throw new RuntimeException('On loading image, Latitude or longitude or azimuth or zenith missing in data.');
+    }
+
+    if (!isset($_POST['project']) || !isset($_POST['accuracy'])   ) {
+        throw new RuntimeException('On loading image, project and accuracy missing in data.');
+    }
+
+    if (!is_numeric($_POST['lat']) || !is_numeric($_POST['lng']) ) {
+        throw new RuntimeException('On loading image, Latitude or longitude  or azimuth or zenith in data are not numeric.');
+    }
 
     // Undefined | Multiple Files | $_FILES Corruption Attack
     // If this request falls under any of them, treat it invalid.
@@ -67,15 +84,6 @@ try {
     }
 
 
-    // GET GEOPOS
-    $imgLocation = get_image_location($_FILES['upfile']['tmp_name']);
-
-    //latitude & longitude
-    $imgLat = $imgLocation['latitude'];
-    $imgLng = $imgLocation['longitude'];;
-    if (false === $imgLocation) {
-        throw new RuntimeException('Geolocation data not found in image! Please check that your image is geotagged.');
-    }
     // You should name it uniquely.
     // DO NOT USE $_FILES['upfile']['name'] WITHOUT ANY VALIDATION !!
     // On this example, obtain safe unique name from its binary data.
@@ -84,15 +92,25 @@ try {
         $ext
     );
 
-    if (!move_uploaded_file( $_FILES['upfile']['tmp_name'],$tmpfname ) ) {
+    if (!move_uploaded_file( $_FILES['upfile']['tmp_name'],$tmpfnamet ) ) {
         throw new RuntimeException('Failed to move uploaded file.');
     }
 
-    chmod($tmpfname, 01777);
+    if (!addGpsInfo( $tmpfnamet, $tmpfname,  $_POST['lat'],  $_POST['lng'], $_POST['azimuth'],
+                                             $_POST['zenith'], $_POST['startTime'], $_POST['accuracy'],
+                                             $_POST['project'] , $_POST['uid']  ) ) {
+        throw new RuntimeException('Failed to add EXIF data to uploaded file.');
+    }
 
-    echo json_encode( array("success" => "Image <a href='". $tmpfname ."'>". basename($tmpfname) ."</a> uploaded successfully to server, OPEN IN <a href='https://earth.google.com/web/@"  .  $imgLat . ",".$imgLng."' target='_blank'> " .
+    unlink($tmpfnamet);
+
+    $old = umask(0);
+    chmod($tmpfname, 0777);
+    umask($old);
+
+    echo json_encode( array("success" => "Image <a href='". $tmpfname ."'>". basename($tmpfname) ."</a> uploaded successfully to server, OPEN IN <a href='https://earth.google.com/web/@"  .  $_POST['lat'] . ",".$_POST['lng']."' target='_blank'> " .
     "Google Earth</a> | " .
-    "<a href='https://www.google.com/maps/search/?api=1&query="  .  $imgLat . ",".$imgLng."' target='_blank'> "  .
+    "<a href='https://www.google.com/maps/search/?api=1&query="  .  $_POST['lat'] . ",". $_POST['lng'] ."' target='_blank'> "  .
     "Google Maps</a>", "timetag"=>$_POST['startTime'] ) );
 
 } catch (RuntimeException $e) {

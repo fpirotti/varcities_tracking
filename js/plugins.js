@@ -107,8 +107,9 @@ updateLoggerWarn = function (text, idlogger = 'logger', newline = true) {
     updateLogger("<span style='color:orange'>" + text + "</span>", idlogger, newline);
 }
 
-updateLoggerAlert = function (text, typeAlert = 0, forceLog = 0) {
+updateLoggerAlert = function (text, typeAlert = 0, forceLog = 0, timeoutforce=999999) {
     var tt = "alert-primary";
+    var timeout = 2000;
     if (typeAlert === 1) {
         if (forceLog !== 0) {
             updateLogger(text);
@@ -119,15 +120,22 @@ updateLoggerAlert = function (text, typeAlert = 0, forceLog = 0) {
         if (forceLog !== 0) {
             updateLoggerWarn(text);
         }
+        timeout=5000;
         tt = "alert-warning";
     }
     if (typeAlert === 3) {
         if (forceLog !== 0) {
             updateLoggerErr(text);
         }
+        timeout=10000;
         tt = "alert-danger";
     }
 
+    if(timeoutforce!=999999){
+        if(timeoutforce>0) {
+            timeout = timeoutforce;
+        }
+    }
     if (forceLog < 2) {
         var alert = document.createElement("div");
         alert.className = `alert  ${tt}`;
@@ -138,18 +146,22 @@ updateLoggerAlert = function (text, typeAlert = 0, forceLog = 0) {
         });
         document.getElementById('mainTAG').appendChild(alert);
         alert.style.marginTop = "1rem";
-        setTimeout(function () {
-            $(alert).fadeOut(1000, function () {
-                $(alert).remove()
-            });
-        }, 10000);
+        if(timeoutforce>0){
+            setTimeout(function () {
+                $(alert).fadeOut(1000, function () {
+                    $(alert).remove()
+                });
+            }, timeout);
+        }
+
+
     }
 
 }
 
 deleteElementFromLocalStorage = function(idx){
-    let tx1 = db.transaction("photoes", "readwrite");
-    let store1 = tx1.objectStore("photoes");
+    let tx1 = db.transaction("geocatchStoredData", "readwrite");
+    let store1 = tx1.objectStore("geocatchStoredData");
 
     const objectStoreRequest = store1.get(Number(idx));
     objectStoreRequest.onsuccess = (event) => {
@@ -163,11 +175,7 @@ deleteElementFromLocalStorage = function(idx){
         }
         tt.onsuccess= function(){
             if(verbose)  console.log(tt);
-            if(verbose)  updateLoggerAlert("Successfully deleted store with key:" + idx, 1, 1);
-        }
-        tt.onsuccess= function(){
-            if(verbose)  console.log(tt);
-            if(verbose)  updateLoggerAlert("Successfully deleted store with key:" + idx, 1, 1);
+            if(verbose)  updateLoggerAlert("Successfully deleted store with key:" + idx, 1);
         }
     } catch (e) {
         updateLoggerAlert(e.message, 3, 1);
@@ -181,26 +189,34 @@ deleteElementFromLocalStorage = function(idx){
     }
 }
 
-saveToLocalStorage = function (uid, startTime, blob) {
+saveToLocalStorage = function (uid, startTime, blob, type, extradata={}) {
     if(typeof(db)==='undefined'){
         updateLoggerAlert(  "DB not available, please send this message to developer", 4);
         return 0;
     }
 
-    const tx = db.transaction("photoes", "readwrite");
-    const store = tx.objectStore("photoes");
+    const tx = db.transaction("geocatchStoredData", "readwrite");
+    const store = tx.objectStore("geocatchStoredData");
 
-    const IDBRequest  = store.put({blob: blob,   timetag: Date.now() });
+    if( typeof(type)!=='undefined' && type!='photo' && type!='track'){
+        updateLoggerAlert(  'Has to be track or photo', 3, 1);
+        return(0);
+    }
+
+    var dd = {blob: blob, type: type,   timetag: startTime };
+    $.each( extradata , function( key, val ) {
+        if(typeof(val)==='number' || typeof(val)==='string') dd[key]=val;
+    });
+    const IDBRequest  = store.put(dd);
     IDBRequest.onerror = (event) => {
         updateLoggerAlert(  `There has been an error with retrieving your data: ${IDBRequest.error}`, 3, 1);
     };
 
     IDBRequest.onsuccess = (event) => {
-        updateLoggerAlert(  "Photo saved to IndexDB, will be synced later.", 1);
+        updateLoggerAlert(  type + " saved to IndexDB, will be synced later.", 1);
 
     };
 
-    updateLogger("Track saved to localStorage for future upload. ");
 }
 
 
@@ -225,7 +241,7 @@ sendGeoJsonBlobDataToServer = function (uid, startTime, blob) {
         },
         error: function () {
             start_tracking_button.click();
-            saveToLocalStorage(uid, startTime, blob);
+            saveToLocalStorage(uid, startTime, blob, 'track');
             updateLoggerAlert("Server is not available - data stored locally. If this is unexpected, contact the developer.", 3);
         }
     });
@@ -243,15 +259,12 @@ sendGeoJsonBlobDataToServer = function (uid, startTime, blob) {
 
     });
 
-}
+};
 
 
 sendGeoJsonBlobDataToServerBuff = function (uid, startTime, buff) {
 
-
     const blob = new Blob([uid, starTimeBuff, buff], {type: "application/octet-stream"});
-
-
 
     var promise = $.ajax({
         type: 'POST',
@@ -260,7 +273,6 @@ sendGeoJsonBlobDataToServerBuff = function (uid, startTime, buff) {
         contentType: false, //'application/octet-stream',
         processData: false
     }) ;
-
 
     promise.done(function (ret) {
 
@@ -271,7 +283,9 @@ sendGeoJsonBlobDataToServerBuff = function (uid, startTime, buff) {
 
         resetTrackButton();
     });
+
     promise.fail(function (err) {
+        saveToLocalStorage(uid, startTime, blob, 'track');
         updateLoggerAlert("GeoJSON error uploading data to server." + JSON.stringify(err), 3, 1);
         resetTrackButton();
     });
@@ -341,15 +355,17 @@ var runAjaxImageUpload = function(formData, that){
                 if(typeof(data.timetag)!=="undefined"){
                     deleteElementFromLocalStorage(data.timetag);
                 } else {
-                    updateLoggerAlert("No timetag error" + JSON.stringify(data), 3, 1);
+                    updateLoggerAlert("No timetag, error " + JSON.stringify(data), 3, 1);
                 }
             }
 
         },
         error: function (error) {
             error.message = error.message || error.statusText;
-            updateLoggerAlert(error.message, 3,1);
-            alert(error.message);
+            error.message = error.message  + ' - on uploading to server, will save to storage and sync later.';
+            saveToLocalStorage(that.uid, that.timetag, that.file, 'photo', that);
+            if(verbose) updateLoggerAlert(error.message, 21);
+ 
             // handle error
         },
         async: true,
@@ -360,8 +376,16 @@ var runAjaxImageUpload = function(formData, that){
         timeout: 60000
     });
 }
-var Upload = function (file) {
+var Upload = function (file, lat, lng, zenith, azimuth, uid, timetag, accuracy, project) {
     this.file = file;
+    this.lat = lat;
+    this.lng = lng;
+    this.zenith = zenith;
+    this.azimuth = azimuth;
+    this.uid = uid;
+    this.timetag = timetag;
+    this.accuracy = accuracy;
+    this.project = project;
 };
 
 Upload.prototype.getType = function () {
@@ -380,8 +404,14 @@ Upload.prototype.doUpload = function () {
     // add assoc key values, this will be posts values
     formData.append("upfile", this.file, this.getName());
     formData.append("upload_file", true);
-    formData.append('uid', uid);
-    formData.append('startTime', Date.now());
+    formData.append('uid', this.uid);
+    formData.append('startTime', this.timetag);
+    formData.append('lat', this.lat);
+    formData.append('lng', this.lng);
+    formData.append('azimuth', this.azimuth);
+    formData.append('zenith', this.zenith);
+    formData.append('accuracy', this.accuracy);
+    formData.append('project', this.project);
     runAjaxImageUpload(formData, that);
 };
 
@@ -509,10 +539,17 @@ function successLocationListen(pos) {
 function errorLocationListen(e) {
     $("#errorsLocs").html(errorLocations);
     errorLocations++;
-    $("#errorsLocs").html(" (" + errorLocations + ")");
-    var msg = e.message + " ... tracking is temporarily not working as  Location is not accessible yet please wait or " +
-        "check your phone settings: tot errors=" + errorLocations;
-    updateLoggerAlert(msg, 2, true);
+    if(e==3 && errorLocations < 3){
+        $("#errorsLocs").html(" (" + errorLocations + ")");
+        var msg = "Geolocation not yet available, it will work when device moves.";
+        updateLoggerAlert(msg, 2, true);
+    }
+    if(e<3) {
+        $("#errorsLocs").html(" (" + errorLocations + ")");
+        var msg = e.message + " ... tracking is temporarily not working as  Location is not accessible yet please wait or " +
+            "check your phone settings: tot errors=" + errorLocations;
+        updateLoggerAlert(msg, 2, true);
+    }
 
 }
 
@@ -611,40 +648,9 @@ class SensorFusionActivity {
 
 }
 
-let motionClass = new SensorFusionActivity();
-motionClass.initListeners();
+//let motionClass = new SensorFusionActivity();
+//motionClass.initListeners();
 
-function userIsTakingPicture(a) { // get image orientation and put in exif
-
-}
-
-const big0 = BigInt(0)
-const big1 = BigInt(1)
-const big8 = BigInt(8)
-
-function bigToUint8Array(big) {
-    if (big < big0) {
-        // work out how long is the big int in bits and add 1
-        const bits = (BigInt(big.toString(2).length) / big8 + big1) * big8
-        // create a BigInt that's 100000... of length of big + 1
-        const prefix1 = big1 << bits
-        big += prefix1
-    }
-    let hex = big.toString(16)
-    if (hex.length % 2) {
-        hex = '0' + hex
-    }
-    const len = hex.length / 2
-    const u8 = new Uint8Array(len)
-    var i = 0
-    var j = 0
-    while (i < len) {
-        u8[i] = parseInt(hex.slice(j, j + 2), 16)
-        i += 1
-        j += 2
-    }
-    return u8
-}
 
 const beforeUnloadListener = (event) => {
     event.preventDefault();
@@ -652,31 +658,26 @@ const beforeUnloadListener = (event) => {
 };
 
 
-function onFs(fs){
-    fs.root.getDirectory('Documents', {create:true}, (directoryEntry) => {
-        //directoryEntry.isFile === false
-        //directoryEntry.isDirectory === true
-        //directoryEntry.name === 'Documents'
-        //directoryEntry.fullPath === '/Documents'
 
-    }, onError);
+const dbname =  location.pathname.replace(/\//g, '') + "__cache__";
+let db = null;
 
-};
-
-let dbname =  location.pathname.replace(/\//g, '') + "__cache__";
-let db;
-
-const request = indexedDB.open(dbname);
+let request = null;
 
 const sync = function(){
 
     if(!isOnline){
-        updateLoggerAlert("Phone not online, will not sync", 2);
+        if(verbose) updateLoggerAlert("Phone not online, will not sync", 2);
         return 0;
     }
-
-    const tx = db.transaction("photoes", "readonly");
-    const store = tx.objectStore("photoes");
+    let tx;
+    try{
+        tx = db.transaction("geocatchStoredData", "readonly");
+    }catch (e){
+        if(verbose) updateLoggerAlert("DB not ready, will not sync now", 2);
+        return(false);
+    }
+    const store = tx.objectStore("geocatchStoredData");
     console.warn(store.getAll());
     const str = store.getAll();
     str.onsuccess = function(e) {
@@ -687,11 +688,13 @@ const sync = function(){
             updateLoggerAlert("Nothing to sync", 1);
             return 0;
         }
+
         updateLoggerAlert("Store available with " + (str.result).length + ' items.' + addedstr
             , 1);
 
-        const tx = db.transaction("photoes", "readwrite");
-        const store = tx.objectStore("photoes");
+
+        const tx = db.transaction("geocatchStoredData", "readwrite");
+        const store = tx.objectStore("geocatchStoredData");
         for(var i=0; i<str.result.length; ++i){
             if(verbose) console.warn( str.result[i].blob.size + "--" + JSON.stringify(str.result[i]) + "--"+i);
             if( typeof(str.result[i].blob.size)==="undefined" ){
@@ -703,7 +706,12 @@ const sync = function(){
             formData.append("upload_file", true);
             formData.append('uid', uid);
             formData.append('startTime', str.result[i].timetag );
-            runAjaxImageUpload(formData, this);
+            if(str.result[i].type=='photo') {
+                formData.append('uid', uid);
+                runAjaxImageUpload(formData, this);
+            } else  if(str.result[i].type=='track') {
+                uploadGeoJSONblob(formData, this);
+            }
         }
     }
 }
@@ -717,28 +725,29 @@ const syncPrep = function(){
                 console.log(`You've used ${percentageUsed}% of the available storage.`);
                 const remaining = quota.quota - quota.usage;
                 console.log(`You can write up to ${remaining/1000000} more Mbytes.`);
-                updateLoggerAlert(`You can write up to ${ (remaining/1000000000).toFixed(3) } more GBytes.`, 1);
+                updateLoggerAlert(`You can write up to ${ (remaining/1000000000).toFixed(0) } more GBytes.`, 1);
             }
         );
 
+        if(request == null) request = indexedDB.open(dbname);
         request.onupgradeneeded = function() {
             // The database did not previously exist, so create object stores and indexes.
             db = request.result;
             if(verbose) updateLoggerAlert("Upgrade DB", 1);
-            // if( !db.objectStoreNames.contains("photoes") ){
+            // if( !db.objectStoreNames.contains("geocatchStoredData") ){
             try{
-                db.createObjectStore("photoes", {keyPath: "timetag"} );
+                db.createObjectStore("geocatchStoredData", {keyPath: "timetag"} );
+                sync();
             }  catch (e) {
                 updateLoggerAlert("Store creation returned error:" + e, 3);
             }
             //  }
         };
 
-
         request.onsuccess = function() {
             db = request.result;
 
-            if( !db.objectStoreNames.contains("photoes") ){
+            if( !db.objectStoreNames.contains("geocatchStoredData") ){
 
                 const deldb = indexedDB.deleteDatabase(dbname);
                 deldb.onsuccess = function(){
@@ -747,6 +756,8 @@ const syncPrep = function(){
                 deldb.onerror = function(){
                     updateLoggerAlert("Error on  deleted DB " + deldb.error +" - contact developer.", 1);
                 }
+            } else {
+                sync();
             }
 
         };
@@ -764,7 +775,7 @@ const syncPrep = function(){
     }
 }
 
-syncPrep();
+
 
 
 
@@ -773,8 +784,21 @@ const initPhoto = function() {
     // width to the value defined here, but the height will be
     // calculated based on the aspect ratio of the input stream.
 
-    const width = 320; // We will scale the photo width to this
-    let height = 0; // This will be computed based on the input stream
+     let smallside = $(window).width();
+    //
+     if( $(window).width() < $(window).height() ){
+         smallside = $(window).height();
+    }
+    //
+     smallside = smallside/2;
+     smallside = smallside - 40; // 15 px padding
+    // console.log(smallside);
+
+   // $('#camera').width( smallside );
+  //  $('#video').width(  smallside );
+
+    let width = 320; // We will scale the photo width to this
+    let height = 320; // This will be computed based on the input stream
 
     // |streaming| indicates whether or not we're currently streaming
     // video from the camera. Obviously, we start at false.
@@ -787,42 +811,53 @@ const initPhoto = function() {
     let video = null;
     let canvas = null;
     let photo = null;
-    let startbutton = null;
+    let startTimeLocal = null;
+    let streamv = null;
 
+    video = document.getElementById("video");
+    canvas = document.getElementById("canvas");
+    photo = document.getElementById("photo");
+
+    // user clicks in red border ----
+    $('#photoarea').off();
+    $('#photoarea').on('click', function(e) {
+        e.preventDefault();
+        e.stopPropagation();
+        $("#photoarea").hide();
+        stopVideo(streamv);
+        navigator.geolocation.clearWatch(interval);
+        if(typeof(orientationcontrolG)!=='undefined') {
+            orientationcontrolG.stop();
+        }
+    });
+
+    $("#startbutton").off();
+    $("#startbutton").on(
+        "click",
+        function(ev){
+            ev.preventDefault();
+            ev.stopPropagation();
+            takepicture();
+        }
+    );
     function stopVideo(stream) {
-        stream.getTracks().forEach(function(track) {
-            if (track.readyState == 'live' && track.kind === 'video') {
-                track.stop();
-            }
-        });
-    }
-    function showViewLiveResultButton() {
-        if (window.self !== window.top) {
-            // Ensure that if our document is in a frame, we get the user
-            // to first open it in its own tab or window. Otherwise, it
-            // won't be able to request permission for camera access.
-            document.querySelector(".contentarea").remove();
-            const button = document.createElement("button");
-            button.textContent = "View live result of the example code above";
-            document.body.append(button);
-            button.addEventListener("click", () => window.open(location.href));
-            return true;
+        if(typeof(stream)!=='undefined'){
+            stream.getTracks().forEach(function(track) {
+                if (track.readyState == 'live' && track.kind === 'video') {
+                    track.stop();
+                }
+            });
         }
-        return false;
-    }
 
+    }
     function startup() {
-        if (showViewLiveResultButton()) {
-            return;
-        }
-        video = document.getElementById("video");
-        canvas = document.getElementById("canvas");
-        photo = document.getElementById("photo");
-        startbutton = document.getElementById("startbutton");
-
-        let streamv = false;
+        $("#video").off();
+        clearphoto();
+        video.oncanplay = () => {};
         navigator.mediaDevices
             .getUserMedia({  video: {
+                     width: {   ideal: 2000  },
+                    frameRate: 5,
                     facingMode: 'environment'
                 }, audio: false })
             .then((stream) => {
@@ -830,13 +865,12 @@ const initPhoto = function() {
                 video.srcObject = stream;
                 video.play();
             })
-            .catch((err) => {
-                console.error(`An error occurred: ${err}`);
+            .catch(error => {
+                updateLoggerAlert('An error occurred : '+ (error.name || error) +' - maybe your ' +
+                    'camera is busy with another app', 3, 1);
             });
 
-        video.addEventListener(
-            "canplay",
-            (ev) => {
+        video.oncanplay = (ev) => {
                 if (!streaming) {
                     height = video.videoHeight / (video.videoWidth / width);
 
@@ -846,40 +880,19 @@ const initPhoto = function() {
                     if (isNaN(height)) {
                         height = width / (4 / 3);
                     }
-
                     video.setAttribute("width", width);
                     video.setAttribute("height", height);
                     canvas.setAttribute("width", width);
                     canvas.setAttribute("height", height);
                     streaming = true;
                 }
-            },
-            false
-        );
+            } ;
 
-        startbutton.addEventListener(
-            "click",
-            (ev) => {
-                takepicture();
-                ev.preventDefault();
-            },
-            false
-        );
-
-        photo.addEventListener(
-            "dblclick",
-            (ev) => {
-                stopVideo(streamv);
-                ev.preventDefault();
-            },
-            false
-        );
-
-        clearphoto();
     }
 
     // Fill the photo with an indication that none has been
     // captured.
+
 
     function clearphoto() {
         const context = canvas.getContext("2d");
@@ -896,18 +909,62 @@ const initPhoto = function() {
     // drawing that to the screen, we can change its size and/or apply
     // other changes before drawing it.
 
-    function takepicture() {
-        const context = canvas.getContext("2d");
-        if (width && height) {
-            canvas.width = width;
-            canvas.height = height;
-            context.drawImage(video, 0, 0, width, height);
+    async function takepicture()  {
 
-            const data = canvas.toDataURL("image/jpg");
+        $('.zenith2').html($('.zenith')[0].innerHTML);
+        $('.azimuth2').html($('.azimuth')[0].innerHTML);
+        $('.geoloc_lat2').html($('.geoloc_lat')[0].innerHTML);
+        $('.geoloc_lng2').html($('.geoloc_lng')[0].innerHTML);
+        $('.geoloc_acc2').html($('.geoloc_acc')[0].innerHTML);
+
+        startTimeLocal = Date.now();
+
+        const videoElem = video;
+
+      //  videoElem.srcObject = streamv;
+     //   videoElem.onplaying = () => {
+
+        // var hRatio =  width / videoElem.videoWidth     ;
+        // var vRatio =  height / videoElem.videoHeight   ;
+        // var ratio  = Math.min ( hRatio, vRatio );
+        // canvas.height = videoElem.videoHeight ;
+        // canvas.width = videoElem.videoWidth ;
+
+        const context = canvas.getContext("2d");
+
+        if (width && height) {
+            canvas.width = videoElem.videoWidth;
+            canvas.height =  videoElem.videoHeight ;
+            context.drawImage(video, 0, 0 );
+            const data = canvas.toDataURL("image/png");
             photo.setAttribute("src", data);
         } else {
             clearphoto();
         }
+
+        $('#geolocsInPhoto2').show();
+
+        $("#photo").off();
+        $('#photo').on({
+            'dblclick doubletap click': function(e) {
+                e.stopPropagation();
+                e.preventDefault();
+
+                clearphoto();
+                $('#geolocsInPhoto2').hide();
+                canvas.toBlob(function(blob){
+                    const up = new Upload(blob,
+                        Number($('.geoloc_lat2').html()),
+                        Number($('.geoloc_lng2').html()),
+                        Number($('.zenith2').html()),
+                        Number($('.azimuth2').html()), uid, startTimeLocal,
+                        Number($('.geoloc_acc2').html()),
+                        $("#projectname").val() );
+                    up.doUpload();
+                }, "image/jpeg")
+            }
+        });
+
     }
 
     // Set up our event listener to run the startup process
@@ -915,3 +972,4 @@ const initPhoto = function() {
     //window.addEventListener("load", startup, false);
     startup();
 };
+

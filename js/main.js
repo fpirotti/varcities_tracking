@@ -8,7 +8,7 @@ var startTime;
 
 const options = {
     enableHighAccuracy: true,
-    timeout: 1000,
+    timeout: 5000,
     maximumAge: 0
 };
 
@@ -89,49 +89,6 @@ window.addEventListener( "offline" , ( event ) =>
     updateLoggerAlert("You are offline! Real time data will not be streamed", 3);
 });
 
-$("#file-input").on("input", function (e) {
-    var file = $(this)[0].files[0];
-    ///////// upload image ------
-    var upload = new Upload(file);
-    var file1 = e.target.files[0]
-    if (file1 && file1.name) {
-        EXIF.getData(file1, function () {
-            var exifData = this.exifdata;
-            if (exifData) {
-                if ((typeof exifData.GPSLongitude) === "undefined") {
-                    var altstr = "No  GPS data found in your image!!";
-                    alert(altstr + " Please check LOG for more info.");
-                    updateLoggerAlert(altstr + " ... " +
-                        " <a href='https://www.google.com/search?q=activate+geotagging+in+photoes+smartphone&ei=v9rbY5qeD8iHxc8P5qKUyAw&ved=0ahUKEwja-cK0l_f8AhXIQ_EDHWYRBckQ4dUDCA8&uact=5&oq=activate+geotagging+in+photoes+smartphone&' target='_blank'>" +
-                        "Click HERE for help</a>", 3, 1);
-
-                } else {
-                   if(isOnline) {
-                       upload.doUpload();
-                   } else {
-                       updateLoggerAlert("You are currently not online....will save to DB and sync later",
-                           2,1);
-                       saveToLocalStorage(uid, startTime, file);
-
-                   }
-                }
-            } else {
-                updateLoggerAlert("No  GPS data found in image !!! Please check your phone settings.", 3,1);
-            }
-        });
-    }
-
-});
-
-
-
-//var slider = document.getElementById("accthresh");
-//var output = document.getElementById("accthreshvalue");
-//output.innerHTML = slider.value; // Display the default slider value
-// Update the current slider value (each time you drag the slider handle)
-//slider.oninput = function () {
-//    output.innerHTML = this.value;
-//}
 
 if(window.location.pathname.includes('fireres')){
     $("#start_demo").hide();
@@ -186,11 +143,13 @@ $('#file-button')[0].addEventListener('long-press', function(e) {
     initPhoto();
 });
 
+
 $('#file-button').click(function () {
+    interval = navigator.geolocation.watchPosition(successLocationListenCamera, errorLocationListen, options);
+
     $("#photoarea").show();
     initPhoto();
-    interval = navigator.geolocation.watchPosition(successLocationListenCamera, errorLocationListen, options);
-    var devorientationFullTilt = FULLTILT.getDeviceOrientation({'type': 'world'});
+     var devorientationFullTilt = FULLTILT.getDeviceOrientation({'type': 'world'});
 
     devorientationFullTilt.then(function(orientationControl) {
         orientationcontrolG = orientationControl;
@@ -207,12 +166,7 @@ $('#file-button').click(function () {
     });
     //$('#file-input').click();
 });
-$('#outputPhoto').on('dblclick doubletap',function () {
-    $("#photoarea").hide();
-    navigator.geolocation.clearWatch(interval);
-    orientationcontrolG.stop();
-    //$('#file-input').click();
-});
+
 
 start_tracking_button.addEventListener('long-press', function(e) {
 

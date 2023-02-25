@@ -60,7 +60,7 @@ $tmpfnamez = $tmpfname .".zip";
 
 if(!file_put_contents($tmpfnameb,  $data ) ){
     header('Content-type: application/json');
-    echo json_encode( array("error"=> " cannot write to file"));
+    echo json_encode( array("error"=> " cannot write to file: " . $tmpfnameb ));
     exit(0);
 }
 

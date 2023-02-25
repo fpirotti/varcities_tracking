@@ -1,5 +1,5 @@
 var serviceWorkerRegistration = null;
-
+var isOnline = null;
 var app = new App();
 
 
@@ -13,10 +13,15 @@ function init(verbose=true)
         {
             if(verbose) updateLoggerAlert( "service worker has been registered successfully" );
             serviceWorkerRegistration = reg;
-            return reg.sync.getTags();
+            var tags=null;
+            try{ tags = reg.sync.getTags(); } catch(e) {
+                if(verbose) updateLoggerAlert("Your browser does not support sync of service worker... not a problem.", 2,1)
+            }
+            return tags;
         }
         ).then(function(tags) {
-            if (tags.includes('syncTest')) {
+
+            if (tags && tags.includes('syncTest')) {
                 if(verbose)  updateLoggerAlert("There's already a background sync pending", 2);
             }
         }).catch( ( error ) =>
@@ -30,7 +35,7 @@ function init(verbose=true)
     {
         console.log( "online mode" );
         isOnline=true;
-        sync();
+        syncPrep();
     }
     else 
     {

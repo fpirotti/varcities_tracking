@@ -11,7 +11,7 @@
     <script src="js/zip.min.js" type="text/javascript"></script>
     <script src="config.js?v=01"></script>
     <script src="src/App.js"></script>
-    <script src="src/main.js?v=s"></script>
+    <script src="src/main.js?v=s2"></script>
     <script src="js/vendor/long-press-event.min.js"></script>
 
     <meta content="yes" name="mobile-web-app-capable">
@@ -98,7 +98,7 @@
             </div>
         </div>
 
-        <div class="col-md-12" id="logger"></div>
+        <div class="col-md-12" id="logger" style="display: none"></div>
         <span class="btn btn-lg btn-outline-secondary btn-block" id="geolocContainerButton"
               onclick="$('#geolocContainer').toggle()">
       <span class="float-left">  <svg class="bi bi-pin-map" fill="currentColor" height="26" viewBox="0 0 16 16"
@@ -164,11 +164,17 @@
 <!--        <input href="#" id="file-input" style="display:none;" type="file">-->
 
 
-        <select class="form-select form-select-lg  mb-3 onlyfireres" style="display: none;" aria-label=".form-select-lg Select project">
-            <option value="0">Choose Project</option>
-            <option value="fireres">FIRE-RES</option>
-            <option value="2">FIRE2</option>
-            <option value="3">FIRE3</option>
+        <select id="projectname" class="form-select form-select-lg  mb-3 onlyfireres" style="display: none;"
+                aria-label=".form-select-lg Select project">
+            <option value="">Choose Project</option>
+            <option value="FIRE-RES">FIRE-RES</option>
+            <option value="FIRE-IN">FIRE-IN</option>
+            <option value="FIRELinks">FIRELinks</option>
+            <option value="FIRELOGUE">FIRELOGUE</option>
+            <option value="FirEUrisk">FirEUrisk</option>
+            <option value="SAFERS">SAFERS</option>
+            <option value="SILVANUS">SILVANUS</option>
+            <option value="TREEADS">TREEADS</option>
         </select>
 
         <div class="progress position-absolute top-50 start-50 translate-middle"
@@ -180,22 +186,20 @@
             </div>
         </div>
 
-        <div class="row" id="photoarea" style="display: none;" >
+        <div class="row position-absolute  justify-content-center"
+             id="photoarea" style="display: none; background: #ff00008f;
+              padding:15px;     left: 0;  right: 0; top: 0;  bottom: 0;" >
 
-            <div class="camera" id="startbutton" style="width: 340px;  display: inline-block;">
-                <video id="video" style="border: 1px solid black; box-shadow: 2px 2px 3px black; width: 320px;  height: 240px;">Video stream not available.</video>
-            </div>
-            <canvas id="canvas" style="display: none;"> </canvas>
-            <div id="outputPhoto" style="  width: 340px; display: inline-block;  vertical-align: top;">
-                <img id="photo"
-                     style="border: 1px solid black; box-shadow: 2px 2px 3px black; width: 320px; height: 240px;" alt="The screen capture will appear in this box." />
+            <div class="camera" id="startbutton"
+                 style=" background: #0000008f;  width: 320px;  height:320px;
+                         display: inline-block;   padding:0; text-align: center; ">
 
-                <div id="geolocsInPhoto"
+                <div id="geolocsInPhoto1"
                      style="     background: rgba(0,0,0,30%);
-    display: flex; position: relative;  flex-wrap: nowrap;  z-index: 33333;
-    bottom: 52px;   left: 2px; padding: 3px;
-    text-shadow: 0px 0px 3px black;  margin: -2px; color: white;" >
-                    <div  >
+    display: flex; position: absolute; text-align: center;  flex-wrap: nowrap;
+    padding: 5px; width: inherit;
+    text-shadow: 0px 0px 3px black;    color: white;" >
+                    <div style="width: 100%;" >
                         <div  >
                             <span class="geoloc_lat">0</span><span> °</span>,
                             <span class="geoloc_lng">0</span><span> °</span>&nbsp;|&nbsp;
@@ -209,10 +213,47 @@
                 </div>
 
 
+                <video id="video"   autoplay muted playsinline style="border: 0px solid black;
+                width: inherit; height: inherit;
+                box-shadow: 0px 0px 5px black;
+              ">Video stream not available.</video>
+
             </div>
+            <div id="outputPhoto"
+                 style="background: #0000008f; padding: 0;  width: 320px;
+                  height:320px; display: inline-block;
+                 text-align: center;" class="align-content-center">
 
+                <div id="geolocsInPhoto2"
+                     style=" display: none;    background: rgba(0,0,0,30%);
+                             position: relative; text-align: center;  flex-wrap: nowrap;
+                              padding: 5px; z-index: 3;  top: 9px;
+                               text-shadow: 0px 0px 3px black;" >
+                    <div  >
+                        <div  >
+                            <span class="geoloc_lat2"></span><span>°</span>,
+                            <span class="geoloc_lng2"></span><span>°</span>|&nbsp;
+                            <span class="geoloc_acc2">0</span><span>m</span>
+                        </div>
+                        <div  >
+                            Azimuth:<span class="azimuth2"></span><span> °</span>&nbsp;|&nbsp;
+                            Elevation: <span class="zenith2"></span><span> °</span>
+                        </div>
+                    </div>
+                </div>
+
+                <canvas id="canvas" style="display: none;" > </canvas>
+
+                <img id="photo" src=""
+                     style="width: inherit;
+                        margin: -48px 0; box-shadow: 0px 0px 5px black;
+                        border: 1px solid black;
+                        box-shadow: 2px 2px 3px black;
+                        width: 320px; "
+                     alt="loading camera stream..." />
+
+            </div>
         </div>
-
     </div>
 
 </main>
@@ -221,9 +262,9 @@
 
 <script src="js/vendor/jquery-3.6.3.min.js"></script>
 <script src="js/fulltilt.min.js"></script>
-<script src="js/jquery.exif.js"></script>
-<script src="js/plugins.js?v=0rewd"></script>
-<script src="js/main.js?v=1d"></script>
+
+<script src="js/plugins.js?v=d93909779cddd999eee0rr2d"></script>
+<script src="js/main.js?v=42d90390"></script>
 
 </body>
 

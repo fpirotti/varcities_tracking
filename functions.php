@@ -1,4 +1,170 @@
 <?php
+include_once("vendor/autoload.php");
+
+use lsolesen\pel\PelEntryAscii;
+use lsolesen\pel\PelEntryByte;
+use lsolesen\pel\PelEntryRational;
+use lsolesen\pel\PelEntryUserComment;
+use lsolesen\pel\PelExif;
+use lsolesen\pel\PelIfd;
+use lsolesen\pel\PelJpeg;
+use lsolesen\pel\PelTag;
+use lsolesen\pel\PelTiff;
+
+
+
+/**
+ * Convert a decimal degree into degrees, minutes, and seconds.
+ *
+ * @param
+ *            int the degree in the form 123.456. Must be in the interval
+ *            [-180, 180].
+ * @return array a triple with the degrees, minutes, and seconds. Each
+ *         value is an array itself, suitable for passing to a
+ *         PelEntryRational. If the degree is outside the allowed interval,
+ *         null is returned instead.
+ */
+function convertDecimalToDMS($degree)
+{
+    if ($degree > 180 || $degree < - 180) {
+        return null;
+    }
+
+    $degree = abs($degree); // make sure number is positive
+    // (no distinction here for N/S
+    // or W/E).
+
+    $seconds = $degree * 3600; // Total number of seconds.
+
+    $degrees = floor($degree); // Number of whole degrees.
+    $seconds -= $degrees * 3600; // Subtract the number of seconds
+    // taken by the degrees.
+
+    $minutes = floor($seconds / 60); // Number of whole minutes.
+    $seconds -= $minutes * 60; // Subtract the number of seconds
+    // taken by the minutes.
+
+    $seconds = round($seconds * 100, 0); // Round seconds with a 1/100th
+    // second precision.
+
+    return [
+        [
+            $degrees,
+            1
+        ],
+        [
+            $minutes,
+            1
+        ],
+        [
+            $seconds,
+            100
+        ]
+    ];
+}
+
+/**
+ * Add GPS information to an image basic metadata.
+ * Any old Exif data
+ * is discarded.
+ *
+ * @param string $input
+ *            the input filename.
+ * @param string $output
+ *            the output filename. An updated copy of the input
+ *            image is saved here.
+ * @param float $longitude
+ *            expressed as a fractional number of degrees,
+ *            e.g. 12.345�. Negative values denotes degrees west of Greenwich.
+ * @param float $latitude
+ *            expressed as for longitude. Negative values
+ *            denote degrees south of equator.
+ * @param string $azimuth
+ *            image azimuth.
+ * @param string $zenith
+ *            image zenith.
+ * @param float $date_time
+ *            the altitude, negative values express an altitude
+ *            below sea level.
+ * @param
+ *            string the date and time.
+ */
+function addGpsInfo($input, $output,   $latitude, $longitude,  $azimuth, $zenith, $date_time, $accuracy, $project, $phoneuid)
+{
+    /* Load the given image into a PelJpeg object */
+    $jpeg = new PelJpeg($input);
+
+    /*
+     * Create and add empty Exif data to the image (this throws away any
+     * old Exif data in the image).
+     */
+    $exif = new PelExif();
+    $jpeg->setExif($exif);
+
+    /*
+     * Create and add TIFF data to the Exif data (Exif data is actually
+     * stored in a TIFF format).
+     */
+    $tiff = new PelTiff();
+    $exif->setTiff($tiff);
+
+    /*
+     * Create first Image File Directory and associate it with the TIFF
+     * data.
+     */
+    $ifd0 = new PelIfd(PelIfd::IFD0);
+    $tiff->setIfd($ifd0);
+
+    /*
+     * Create a sub-IFD for holding GPS information. GPS data must be
+     * below the first IFD.
+     */
+    $gps_ifd = new PelIfd(PelIfd::GPS);
+    $ifd0->addSubIfd($gps_ifd);
+
+    /*
+     * The USER_COMMENT tag must be put in a Exif sub-IFD under the
+     * first IFD.
+     */
+    $exif_ifd = new PelIfd(PelIfd::EXIF);
+    $exif_ifd->addEntry(new PelEntryUserComment($project));
+    $ifd0->addSubIfd($exif_ifd);
+
+
+    $inter_ifd = new PelIfd(PelIfd::INTEROPERABILITY);
+    $ifd0->addSubIfd($inter_ifd);
+
+    $ifd0->addEntry(new PelEntryAscii(PelTag::DATE_TIME, $date_time));
+    $tot =   $project . "|".  $longitude  . "|". $latitude . "|".   $azimuth. "|".  $zenith. "|".  $date_time. "|".  $accuracy. "|" .$phoneuid ;
+    if(isset($project)) $ifd0->addEntry(new PelEntryAscii(PelTag::IMAGE_DESCRIPTION, $tot));
+
+
+    $gps_ifd->addEntry(new PelEntryByte(PelTag::GPS_VERSION_ID, 2, 2, 0, 0));
+    $gps_ifd->addEntry(new PelEntryAscii(PelTag::GPS_IMG_DIRECTION_REF, 'M'));
+    $gps_ifd->addEntry(new PelEntryRational(PelTag::GPS_IMG_DIRECTION, $azimuth));
+    $gps_ifd->addEntry(new PelEntryRational(PelTag::GPS_TRACK, $zenith));
+    $gps_ifd->addEntry(new PelEntryRational(PelTag::GPS_STATUS, $accuracy));
+
+
+    list ($hours, $minutes, $seconds) = convertDecimalToDMS($latitude);
+
+    /* We interpret a negative latitude as being south. */
+    $latitude_ref = ($latitude < 0) ? 'S' : 'N';
+
+    $gps_ifd->addEntry(new PelEntryAscii(PelTag::GPS_LATITUDE_REF, $latitude_ref));
+    $gps_ifd->addEntry(new PelEntryRational(PelTag::GPS_LATITUDE, $hours, $minutes, $seconds));
+
+    /* The longitude works like the latitude. */
+    list ($hours, $minutes, $seconds) = convertDecimalToDMS($longitude);
+    $longitude_ref = ($longitude < 0) ? 'W' : 'E';
+
+    $gps_ifd->addEntry(new PelEntryAscii(PelTag::GPS_LONGITUDE_REF, $longitude_ref));
+    $gps_ifd->addEntry(new PelEntryRational(PelTag::GPS_LONGITUDE, $hours, $minutes, $seconds));
+
+
+    /* Finally we store the data in the output file. */
+    return( file_put_contents($output, $jpeg->getBytes()) );
+}
 
 function removeOldFiles($uid)
 {
@@ -52,53 +218,6 @@ function createGeoJSON($data, $tmpfname=False){
    return($geojson);
 }
 
-/**
- * get_image_location
- * Returns an array of latitude and longitude from the Image file
- * @param $image file path
- * @return multitype:array|boolean
- */
 
-function gps2Num($coordPart) {
-
-    $parts = explode('/', $coordPart);
-
-    if (count($parts) <= 0)
-        return 0;
-
-    if (count($parts) == 1)
-        return $parts[0];
-
-    return floatval($parts[0]) / floatval($parts[1]);
-}
-function get_image_location($image = ''){
-    $exif = exif_read_data($image, 0, true);
-    if($exif && isset($exif['GPS'])){
-        $GPSLatitudeRef = $exif['GPS']['GPSLatitudeRef'];
-        $GPSLatitude    = $exif['GPS']['GPSLatitude'];
-        $GPSLongitudeRef= $exif['GPS']['GPSLongitudeRef'];
-        $GPSLongitude   = $exif['GPS']['GPSLongitude'];
-
-        $lat_degrees = count($GPSLatitude) > 0 ? gps2Num($GPSLatitude[0]) : 0;
-        $lat_minutes = count($GPSLatitude) > 1 ? gps2Num($GPSLatitude[1]) : 0;
-        $lat_seconds = count($GPSLatitude) > 2 ? gps2Num($GPSLatitude[2]) : 0;
-
-        $lon_degrees = count($GPSLongitude) > 0 ? gps2Num($GPSLongitude[0]) : 0;
-        $lon_minutes = count($GPSLongitude) > 1 ? gps2Num($GPSLongitude[1]) : 0;
-        $lon_seconds = count($GPSLongitude) > 2 ? gps2Num($GPSLongitude[2]) : 0;
-
-        $lat_direction = ($GPSLatitudeRef == 'W' or $GPSLatitudeRef == 'S') ? -1 : 1;
-        $lon_direction = ($GPSLongitudeRef == 'W' or $GPSLongitudeRef == 'S') ? -1 : 1;
-
-        $latitude = $lat_direction * ($lat_degrees + ($lat_minutes / 60) + ($lat_seconds / (60*60)));
-        $longitude = $lon_direction * ($lon_degrees + ($lon_minutes / 60) + ($lon_seconds / (60*60)));
-
-        return array('latitude'=>$latitude, 'longitude'=>$longitude);
-    }else{
-        return false;
-    }
-}
-
-?>
 
 
