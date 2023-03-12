@@ -33,22 +33,17 @@ function init(verbose=true)
     // check whether in online or offline mode
     if ( navigator.onLine )
     {
-        console.log( "online mode" );
         isOnline=true;
-        syncPrep();
     }
     else 
     {
-        console.log( "offline mode" );
         isOnline=false;
     }
 
     // event listener when going online
     window.addEventListener( "online" , ( event ) =>
     {
-        console.log( "online event" );
         isOnline=true;
-
         sync();
         //updateLogger("You are online");
     });
@@ -56,7 +51,6 @@ function init(verbose=true)
     // event listener when going offline
     window.addEventListener( "offline" , ( event ) =>
     {
-        console.log( "offline event" );
         isOnline=false;
         //updateLogger("You are offline");
     });
@@ -80,4 +74,6 @@ function init(verbose=true)
     });
 
     app.start();
+
+    syncPrep();
 }

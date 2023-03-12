@@ -30,7 +30,8 @@ $tmpfnamet = $tmpfname.'__.jpg';
 try {
 
     if (!isset($_POST['lat']) || !isset($_POST['lng'])  || !isset($_POST['azimuth'])  || !isset($_POST['zenith']) ) {
-        throw new RuntimeException('On loading image, Latitude or longitude or azimuth or zenith missing in data.');
+        file_put_contents("aaa.txt", print_r($_POST, true));
+        throw new RuntimeException('On loading image; Latitude or longitude or azimuth or zenith missing in data.');
     }
 
     if (!isset($_POST['project']) || !isset($_POST['accuracy'])   ) {

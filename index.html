@@ -9,9 +9,9 @@
     <title>Geo-Catch</title>
 
     <script src="js/zip.min.js" type="text/javascript"></script>
-    <script src="config.js?v=01"></script>
+    <script src="config.js?v=1234r"></script>
     <script src="src/App.js"></script>
-    <script src="src/main.js?v=s2"></script>
+    <script src="src/main.js?v=12"></script>
     <script src="js/vendor/long-press-event.min.js"></script>
 
     <meta content="yes" name="mobile-web-app-capable">
@@ -49,9 +49,14 @@
     <link href="custom.css" rel="stylesheet">
     <script src="js/vendor/modernizr-2.8.3.min.js"></script>
 
+    <script src="js/vendor/jquery-3.6.3.min.js"></script>
+    <script src="js/fulltilt.min.js"></script>
+
+    <script src="js/plugins.js?v=12"></script>
+    <script src="js/main.js?v=21"></script>
 </head>
 
-<body onload="init()">
+<body onload="init(); initBody();">
 
 <main id="mainTAG">
     <div class="container d-grid gap-2">
@@ -166,7 +171,7 @@
 
         <select id="projectname" class="form-select form-select-lg  mb-3 onlyfireres" style="display: none;"
                 aria-label=".form-select-lg Select project">
-            <option value="">Choose Project</option>
+            <option value="">Select a project</option>
             <option value="FIRE-RES">FIRE-RES</option>
             <option value="FIRE-IN">FIRE-IN</option>
             <option value="FIRELinks">FIRELinks</option>
@@ -175,6 +180,7 @@
             <option value="SAFERS">SAFERS</option>
             <option value="SILVANUS">SILVANUS</option>
             <option value="TREEADS">TREEADS</option>
+            <option value="NA">None</option>
         </select>
 
         <div class="progress position-absolute top-50 start-50 translate-middle"
@@ -260,11 +266,6 @@
 
 <!-- Add your site or application content here -->
 
-<script src="js/vendor/jquery-3.6.3.min.js"></script>
-<script src="js/fulltilt.min.js"></script>
-
-<script src="js/plugins.js?v=d93909779cddd999eee0rr2d"></script>
-<script src="js/main.js?v=42d90390"></script>
 
 </body>
 

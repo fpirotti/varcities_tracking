@@ -53,10 +53,10 @@ $tmpfnamez = $tmpfname .".zip";
  
 
  
-    if (  !isset($POST['blob'] )   ) {
+  if (  !isset($POST['blob'] )   ) {
     echo json_encode( array("error"=> " No data in php -- ."));
     exit(-1);
-    }
+  }
 
 if(!file_put_contents($tmpfnameb,  $data ) ){
     header('Content-type: application/json');

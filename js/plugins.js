@@ -111,24 +111,22 @@ updateLoggerAlert = function (text, typeAlert = 0, forceLog = 0, timeoutforce=99
     var tt = "alert-primary";
     var timeout = 2000;
     if (typeAlert === 1) {
-        if (forceLog !== 0) {
-            updateLogger(text);
-        }
+
         tt = "alert-success";
     }
-    if (typeAlert === 2) {
-        if (forceLog !== 0) {
-            updateLoggerWarn(text);
-        }
+    if (typeAlert === 2 ) {
+
         timeout=5000;
         tt = "alert-warning";
     }
-    if (typeAlert === 3) {
-        if (forceLog !== 0) {
-            updateLoggerErr(text);
-        }
+    if (typeAlert === 3 ) {
+
         timeout=10000;
         tt = "alert-danger";
+    }
+
+    if (forceLog !== 0 || verbose) {
+        updateLogger(text);
     }
 
     if(timeoutforce!=999999){
@@ -190,6 +188,12 @@ deleteElementFromLocalStorage = function(idx){
 }
 
 saveToLocalStorage = function (uid, startTime, blob, type, extradata={}) {
+
+    if( typeof(type)!=='undefined' && type!='photo' && type!='track'){
+        updateLoggerAlert(  'Has to be track or photo', 3, 1);
+        return(0);
+    }
+
     if(typeof(db)==='undefined'){
         updateLoggerAlert(  "DB not available, please send this message to developer", 4);
         return 0;
@@ -198,10 +202,6 @@ saveToLocalStorage = function (uid, startTime, blob, type, extradata={}) {
     const tx = db.transaction("geocatchStoredData", "readwrite");
     const store = tx.objectStore("geocatchStoredData");
 
-    if( typeof(type)!=='undefined' && type!='photo' && type!='track'){
-        updateLoggerAlert(  'Has to be track or photo', 3, 1);
-        return(0);
-    }
 
     var dd = {blob: blob, type: type,   timetag: startTime };
     $.each( extradata , function( key, val ) {
@@ -241,7 +241,7 @@ sendGeoJsonBlobDataToServer = function (uid, startTime, blob) {
         },
         error: function () {
             start_tracking_button.click();
-            saveToLocalStorage(uid, startTime, blob, 'track');
+            //saveToLocalStorage(uid, startTime, blob, 'track');
             updateLoggerAlert("Server is not available - data stored locally. If this is unexpected, contact the developer.", 3);
         }
     });
@@ -285,7 +285,7 @@ sendGeoJsonBlobDataToServerBuff = function (uid, startTime, buff) {
     });
 
     promise.fail(function (err) {
-        saveToLocalStorage(uid, startTime, blob, 'track');
+        //saveToLocalStorage(uid, startTime, blob, 'track');
         updateLoggerAlert("GeoJSON error uploading data to server." + JSON.stringify(err), 3, 1);
         resetTrackButton();
     });
@@ -480,7 +480,6 @@ function handleMotion(event) {
 
 function successLocationListenCamera(pos) {
 
-
     const crd = pos.coords;
     crd.time = Date.now() - startTime;
     updateFieldIfNotNull('geoloc_lat', crd.latitude, 8);
@@ -501,11 +500,7 @@ function successLocationListen(pos) {
     }
 
     const crd = pos.coords;
-    crd.time = Date.now() - startTime;
-    // surveys[startTime]['x'].push(crd.longitude);
-    // surveys[startTime]['y'].push(crd.latitude);
-    // surveys[startTime]['a'].push(crd.accuracy);
-    // surveys[startTime]['time'].push(crd.time);
+    crd.time = pos.timestamp - startTime;
 
     dataTotBuff[coordCounter * 4] = crd.time;
     dataTotBuff[(coordCounter * 4 + 1)] = crd.longitude * 10000000;
@@ -516,8 +511,6 @@ function successLocationListen(pos) {
         if (isOnline) {
             //dataBuff = dataTotBuff.slice(coordCounter*4, coordCounter*4+3);
             sendRTdata(uid, startTime, crd);
-        } else {
-
         }
     }
 
@@ -526,6 +519,12 @@ function successLocationListen(pos) {
     if ((coordCounter % 1000) === 0) {
         dataTotBuff = add2TypedArrays(dataTotBuff);
     }
+
+
+    if ((coordCounter % 2) === 0) {
+        saveToLocalStorage(uid, startTime, dataTotBuff.slice(0, (coordCounter * 4)), type='track' );
+    }
+
 
     if (visible && $('#geolocContainer').is(':visible')) {
         updateFieldIfNotNull('geoloc_lat', crd.latitude, 8);
@@ -667,7 +666,7 @@ let request = null;
 const sync = function(){
 
     if(!isOnline){
-        if(verbose) updateLoggerAlert("Phone not online, will not sync", 2);
+        if(verbose) updateLoggerAlert("Device not online noi, will  sync you data later, when it comes back online.", 2);
         return 0;
     }
     let tx;
@@ -690,14 +689,19 @@ const sync = function(){
         }
 
         updateLoggerAlert("Store available with " + (str.result).length + ' items.' + addedstr
-            , 1);
+            , 1, 1, 3000   );
+
 
 
         const tx = db.transaction("geocatchStoredData", "readwrite");
         const store = tx.objectStore("geocatchStoredData");
         for(var i=0; i<str.result.length; ++i){
-            if(verbose) console.warn( str.result[i].blob.size + "--" + JSON.stringify(str.result[i]) + "--"+i);
-            if( typeof(str.result[i].blob.size)==="undefined" ){
+            //if(verbose) console.warn( str.result[i].blob.size + "--" + JSON.stringify(str.result[i]) + "--"+i);
+            if( typeof(str.result[i].blob)==="undefined"   ){
+                store.delete( Number(str.result[i].timetag));
+                continue;
+            }
+            if( str.result[i].blob.length < 1   ){
                 store.delete( Number(str.result[i].timetag));
                 continue;
             }
@@ -706,11 +710,20 @@ const sync = function(){
             formData.append("upload_file", true);
             formData.append('uid', uid);
             formData.append('startTime', str.result[i].timetag );
+            for (const key in str.result[i]) {
+                if(key=='blob') continue;
+                formData.append(key, str.result[i][key]);
+            }
             if(str.result[i].type=='photo') {
-                formData.append('uid', uid);
-                runAjaxImageUpload(formData, this);
+
+              //  updateLoggerAlert("Store 1 with " + JSON.stringify(str.result[i]).replace(',','\n') + ' items.' + addedstr
+               //     , 3, 1    );
+               runAjaxImageUpload(formData, this);
             } else  if(str.result[i].type=='track') {
                 uploadGeoJSONblob(formData, this);
+                sendGeoJsonBlobDataToServerBuff(uid, str.result[i].timetag,
+                    str.result[i].blob );
+
             }
         }
     }
@@ -737,7 +750,7 @@ const syncPrep = function(){
             // if( !db.objectStoreNames.contains("geocatchStoredData") ){
             try{
                 db.createObjectStore("geocatchStoredData", {keyPath: "timetag"} );
-                sync();
+                updateLoggerAlert("Store creation successful"  , 1);
             }  catch (e) {
                 updateLoggerAlert("Store creation returned error:" + e, 3);
             }
@@ -771,7 +784,7 @@ const syncPrep = function(){
         };
 
     } else {
-        updateLoggerAlert("You do not have IndexDB available. Storing photoes offline will not work!", 3)
+        updateLoggerAlert("You do not have IndexDB available. Storing data offline will not work!", 3)
     }
 }
 
@@ -783,6 +796,8 @@ const initPhoto = function() {
     // The width and height of the captured photo. We will set the
     // width to the value defined here, but the height will be
     // calculated based on the aspect ratio of the input stream.
+
+
 
      let smallside = $(window).width();
     //
@@ -798,7 +813,7 @@ const initPhoto = function() {
   //  $('#video').width(  smallside );
 
     let width = 320; // We will scale the photo width to this
-    let height = 320; // This will be computed based on the input stream
+    let height ; // This will be computed based on the input stream
 
     // |streaming| indicates whether or not we're currently streaming
     // video from the camera. Obviously, we start at false.
@@ -817,6 +832,7 @@ const initPhoto = function() {
     video = document.getElementById("video");
     canvas = document.getElementById("canvas");
     photo = document.getElementById("photo");
+
 
     // user clicks in red border ----
     $('#photoarea').off();
@@ -856,7 +872,7 @@ const initPhoto = function() {
         video.oncanplay = () => {};
         navigator.mediaDevices
             .getUserMedia({  video: {
-                     width: {   ideal: 2000  },
+                    width: {   ideal: 1024  },
                     frameRate: 5,
                     facingMode: 'environment'
                 }, audio: false })
@@ -950,7 +966,6 @@ const initPhoto = function() {
                 e.stopPropagation();
                 e.preventDefault();
 
-                clearphoto();
                 $('#geolocsInPhoto2').hide();
                 canvas.toBlob(function(blob){
                     const up = new Upload(blob,
@@ -962,6 +977,9 @@ const initPhoto = function() {
                         $("#projectname").val() );
                     up.doUpload();
                 }, "image/jpeg")
+
+
+                clearphoto();
             }
         });
 
