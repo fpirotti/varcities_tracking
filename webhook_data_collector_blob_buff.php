@@ -1,16 +1,17 @@
 <?php
 
 $entityBody = file_get_contents('php://input');
-$data = mb_strcut($entityBody , 18, mb_strlen($entityBody, '8bit') );
-$startTime = unpack("Q", mb_strcut($entityBody , 10, 18 ) );
+$data = mb_strcut($entityBody , 23, mb_strlen($entityBody, '8bit') );
+//$data = mb_strcut($entityBody , 18, mb_strlen($entityBody, '8bit') );
+//$startTime = unpack("Q", mb_strcut($entityBody , 10, 18 ) );
+$startTime =  mb_strcut($entityBody , 10, 13 );
 
-$POST = Array('startTime'=>$startTime[1] ,
+$POST = Array('startTime'=>  $startTime ,
                      'blob'=>unpack("l*", $data),
                       'uid'=>  mb_strcut($entityBody , 0, 10   ),
                     );
 
-file_put_contents('sss.txt',  $entityBody  . '--' . mb_strlen($entityBody, '8bit') . '--
-' . print_r($POST, True) );
+//file_put_contents('sss.txt',  $entityBody  . '--' . mb_strlen($entityBody, '8bit') . '--' . print_r($POST, True) );
 
 header('Content-type: application/json');
 require 'functions.php';

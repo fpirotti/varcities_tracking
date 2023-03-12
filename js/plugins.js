@@ -180,7 +180,7 @@ deleteElementFromLocalStorage = function(idx){
     }
     tx1.oncomplete = function(){
         if(verbose)  console.log(tx1);
-        if(verbose) updateLoggerAlert("Successfully finished transaction over key:" + idx, 1, 1);
+        if(verbose) updateLoggerAlert("Successfully finished DELETING over key:" + idx, 1, 1);
     }
     tx1.onerror = function(){
         updateLoggerAlert("Error - " + tx1.error, 3, 1);
@@ -264,7 +264,9 @@ sendGeoJsonBlobDataToServer = function (uid, startTime, blob) {
 
 sendGeoJsonBlobDataToServerBuff = function (uid, startTime, buff) {
 
-    const blob = new Blob([uid, starTimeBuff, buff], {type: "application/octet-stream"});
+
+
+    const blob = new Blob([uid, startTime, buff], {type: "application/octet-stream"});
 
     var promise = $.ajax({
         type: 'POST',
@@ -278,9 +280,10 @@ sendGeoJsonBlobDataToServerBuff = function (uid, startTime, buff) {
 
         if(typeof(ret.error)!=='undefined'){
             updateLoggerAlert("Data successfully uploaded but error writing to file." + ret.error, 3, 1);
+            return(0);
         }
-        updateLoggerAlert("Data successfully uploaded." + JSON.stringify(ret), 1, 1);
-
+        updateLoggerAlert("Data successfully uploaded: " + JSON.stringify(ret), 1, 1);
+        deleteElementFromLocalStorage(startTime);
         resetTrackButton();
     });
 
@@ -521,7 +524,7 @@ function successLocationListen(pos) {
     }
 
 
-    if ((coordCounter % 2) === 0) {
+    if ((coordCounter % 10) === 0) {
         saveToLocalStorage(uid, startTime, dataTotBuff.slice(0, (coordCounter * 4)), type='track' );
     }
 
@@ -562,20 +565,20 @@ async function getZipFileBlob(geojson2) {
 }
 
 function uploadGeoJSONblob(blob) {
-    updateLoggerAlert("GeoJSON saved in device.", 1);
+    updateLoggerAlert("GeoJSON saved in device. " + JSON.stringify(blob), 1);
     var newa = Object.assign(document.createElement("a"), {
         download: startDate.yyyymmdd() + '.zip',
         href: URL.createObjectURL(blob),
         textContent: "==>> " + startDate.yyyymmdd() + '.zip <<==',
         style: 'text-align:center; display: block; color:red;font-weight:900;'
     });
+
+
     $('#logger').append(newa);
     $('#logger').show();
     var objDiv = document.getElementById("logger");
     objDiv.scrollTop = objDiv.scrollHeight + 10;
 
-
-    //sendGeoJsonBlobDataToServer(uid, startTime, blob);
 }
 
 function add2TypedArrays(a) { // a, b TypedArray of same type
@@ -688,41 +691,53 @@ const sync = function(){
             return 0;
         }
 
-        updateLoggerAlert("Store available with " + (str.result).length + ' items.' + addedstr
+        updateLoggerAlert("--Store available with " + (str.result).length + ' items.' + addedstr
             , 1, 1, 3000   );
 
 
 
         const tx = db.transaction("geocatchStoredData", "readwrite");
         const store = tx.objectStore("geocatchStoredData");
+
+
         for(var i=0; i<str.result.length; ++i){
             //if(verbose) console.warn( str.result[i].blob.size + "--" + JSON.stringify(str.result[i]) + "--"+i);
             if( typeof(str.result[i].blob)==="undefined"   ){
                 store.delete( Number(str.result[i].timetag));
                 continue;
             }
+
             if( str.result[i].blob.length < 1   ){
                 store.delete( Number(str.result[i].timetag));
                 continue;
             }
+
+
             var formData = new FormData();
-            formData.append("upfile", str.result[i].blob,  "name"+i );
+            formData.append("upfile", str.result[i].blob );
             formData.append("upload_file", true);
             formData.append('uid', uid);
             formData.append('startTime', str.result[i].timetag );
+
+
             for (const key in str.result[i]) {
                 if(key=='blob') continue;
                 formData.append(key, str.result[i][key]);
             }
-            if(str.result[i].type=='photo') {
 
-              //  updateLoggerAlert("Store 1 with " + JSON.stringify(str.result[i]).replace(',','\n') + ' items.' + addedstr
-               //     , 3, 1    );
+            if(str.result[i].type=='photo') {
                runAjaxImageUpload(formData, this);
             } else  if(str.result[i].type=='track') {
-                uploadGeoJSONblob(formData, this);
+
+                updateLoggerAlert(str.result[i].type + " ---llll   ;;; Tried " + str.result[i].blob,
+                    1, 1, 3000   );
+
                 sendGeoJsonBlobDataToServerBuff(uid, str.result[i].timetag,
                     str.result[i].blob );
+
+                updateLoggerAlert(str.result[i].type + " ---llll   ;;; Tried " + str.result[i].timetag,
+                    1, 1, 3000   );
+
 
             }
         }

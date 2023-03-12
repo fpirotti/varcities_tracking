@@ -1,5 +1,5 @@
 // increase the version when uploading to create a new service worker cache name
-var serviceWorkerCacheVersion = 1.11;
+var serviceWorkerCacheVersion = 1.13;
 
 /*
 define the environment where the app is running
