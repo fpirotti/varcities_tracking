@@ -194,8 +194,8 @@ function initBody(){
                         updateLogger("Wakelock released");
                     });
             } catch (error) {
-                updateLoggerAlert("Wakelock .." + error, 2, 1);
-                console.error(error);
+                //updateLoggerAlert(  error, 2, 1);
+
                 // Expected output: ReferenceError: nonExistentFunction is not defined
                 // (Note: the exact output may be browser-dependent)
             }

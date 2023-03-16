@@ -111,23 +111,27 @@ updateLoggerAlert = function (text, typeAlert = 0, forceLog = 0, timeoutforce=99
     var tt = "alert-primary";
     var timeout = 2000;
     if (typeAlert === 1) {
-
+        if (forceLog !== 0 || verbose) {
+            console.log(text);
+        }
         tt = "alert-success";
     }
     if (typeAlert === 2 ) {
-
+        if (forceLog !== 0 || verbose) {
+            console.warn(text);
+        }
         timeout=5000;
         tt = "alert-warning";
     }
     if (typeAlert === 3 ) {
-
+        if (forceLog !== 0 || verbose) {
+            console.error(text);
+        }
         timeout=10000;
         tt = "alert-danger";
     }
 
-    if (forceLog !== 0 || verbose) {
-        updateLogger(text);
-    }
+
 
     if(timeoutforce!=999999){
         if(timeoutforce>0) {
@@ -212,10 +216,9 @@ saveToLocalStorage = function (uid, startTime, blob, type, extradata={}) {
         updateLoggerAlert(  `There has been an error with retrieving your data: ${IDBRequest.error}`, 3, 1);
     };
 
-    IDBRequest.onsuccess = (event) => {
-        updateLoggerAlert(  type + " saved to IndexDB, will be synced later.", 1);
-
-    };
+    //IDBRequest.onsuccess = (event) => {
+        //updateLoggerAlert(  type + " saved to IndexDB, will be synced later.", 1);
+    //};
 
 }
 
@@ -263,8 +266,6 @@ sendGeoJsonBlobDataToServer = function (uid, startTime, blob) {
 
 
 sendGeoJsonBlobDataToServerBuff = function (uid, startTime, buff) {
-
-
 
     const blob = new Blob([uid, startTime, buff], {type: "application/octet-stream"});
 
@@ -519,13 +520,15 @@ function successLocationListen(pos) {
 
 
     coordCounter = coordCounter + 1;
-    if ((coordCounter % 1000) === 0) {
+    if ((coordCounter % 250) === 0) {
         dataTotBuff = add2TypedArrays(dataTotBuff);
+        console.warn("Datatotbuff length="+dataTotBuff.length);
     }
 
 
     if ((coordCounter % 10) === 0) {
-        saveToLocalStorage(uid, startTime, dataTotBuff.slice(0, (coordCounter * 4)), type='track' );
+         saveToLocalStorage(uid, startTime, dataTotBuff.slice(0, (coordCounter*4)), type='track' );
+        //  saveToLocalStorage(uid, startTime, dataTotBuff.slice(0, (coordCounter * 4)), type='track' );
     }
 
 
@@ -669,7 +672,7 @@ let request = null;
 const sync = function(){
 
     if(!isOnline){
-        if(verbose) updateLoggerAlert("Device not online noi, will  sync you data later, when it comes back online.", 2);
+        if(verbose) updateLoggerAlert("Device not online, will  sync you data later, when it comes back online.", 2);
         return 0;
     }
     let tx;
@@ -728,17 +731,9 @@ const sync = function(){
             if(str.result[i].type=='photo') {
                runAjaxImageUpload(formData, this);
             } else  if(str.result[i].type=='track') {
-
-                updateLoggerAlert(str.result[i].type + " ---llll   ;;; Tried " + str.result[i].blob,
-                    1, 1, 3000   );
-
+                alert(str.result[i].blob.length);
                 sendGeoJsonBlobDataToServerBuff(uid, str.result[i].timetag,
                     str.result[i].blob );
-
-                updateLoggerAlert(str.result[i].type + " ---llll   ;;; Tried " + str.result[i].timetag,
-                    1, 1, 3000   );
-
-
             }
         }
     }

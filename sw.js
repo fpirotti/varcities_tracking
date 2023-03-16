@@ -26,6 +26,7 @@ self.addEventListener( "install" , ( event ) =>
 			"js/plugins.js",
 			"js/fulltilt.min.js",
 			"js/main.js",
+			"js/zip.min.js",
 			"img/favicon.ico",
 			"img/maskable_icon_x128.png", 
 			"img/maskable_icon_x192.png",

@@ -8,10 +8,35 @@
 
     <title>Geo-Catch</title>
 
+
+    <script>
+        var realConsoleLog = console.log;
+        var realConsoleWarning = console.warn;
+        var realConsoleErr = console.error;
+        console.error = function () {
+            var message = [].join.call(arguments, " ");
+            // Display the message somewhere... (jQuery example)
+            $("#logger").append('<br><div style="color:red">'+message+'</div>');
+            realConsoleErr.apply(console, arguments);
+        };
+        console.warn = function () {
+            var message = [].join.call(arguments, " ");
+            // Display the message somewhere... (jQuery example)
+            $("#logger").append('<br><div style="color:orange">'+message+'</div>');
+            realConsoleWarning.apply(console, arguments);
+        };
+        console.log = function () {
+            var message = [].join.call(arguments, " ");
+            // Display the message somewhere... (jQuery example)
+            $("#logger").append('<br><div style="color:green">'+message+'</div>');
+            realConsoleLog.apply(console, arguments);
+        };
+    </script>
+
     <script src="js/zip.min.js" type="text/javascript"></script>
-    <script src="config.js?v=12"></script>
+    <script src="config.js?"></script>
     <script src="src/App.js"></script>
-    <script src="src/main.js?v=12"></script>
+    <script src="src/main.js"></script>
     <script src="js/vendor/long-press-event.min.js"></script>
 
     <meta content="yes" name="mobile-web-app-capable">
@@ -44,7 +69,7 @@
 
     <!--  <link rel="stylesheet" href="css/normalize.css">
       <link rel="stylesheet" href="custom.css?d=ee">-->
-    <link href="css/bootstrap.min.css?" rel="stylesheet">
+    <link href="css/bootstrap.min.css" rel="stylesheet">
     <link href="css/style.css" rel="stylesheet">
     <link href="custom.css" rel="stylesheet">
     <script src="js/vendor/modernizr-2.8.3.min.js"></script>
@@ -52,8 +77,8 @@
     <script src="js/vendor/jquery-3.6.3.min.js"></script>
     <script src="js/fulltilt.min.js"></script>
 
-    <script src="js/plugins.js?v=12345"></script>
-    <script src="js/main.js?v=215"></script>
+    <script src="js/plugins.js?v=123"></script>
+    <script src="js/main.js?v=1"></script>
 </head>
 
 <body onload="init(); initBody();">
@@ -61,7 +86,8 @@
 <main id="mainTAG">
     <div class="container d-grid gap-2">
         <hr>
-        <span class="btn  btn-lg text-nowrap btn-outline-success " id="start_demo" style="">
+        <span class="btn  btn-lg text-nowrap btn-outline-success " id="start_demo" style="height: 100px;
+padding: 10% 0;">
      <b id="start_demo_txt">     START TRACKING         </b>
     <span aria-hidden="true" class="spinner-grow spinner-grow-sm   float-right" id="spinner" role="status"
           style="display: none;"></span>
@@ -263,7 +289,6 @@
     </div>
 
 </main>
-
 <!-- Add your site or application content here -->
 
 

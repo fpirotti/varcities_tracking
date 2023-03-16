@@ -189,7 +189,7 @@ function createGeoJSON2($data, $startTime, $tmpfname=False){
         $ddd =date('Y-m-dTH:i:s', $data[$n*4+1]/1000 + $startTime);
         $fin[]='{ "type": "Feature",
         "geometry": {"type": "Point", "coordinates": [ '.  ($data[$n*4+2]/10000000)  .  ',   ' .  ($data[$n*4+3]/10000000) .  '  ]},
-        "properties": {"ac":  '.  ($data[$n*4+4]/100) .  ', "time":'. $ddd .'}
+        "properties": {"ac":  '.  ($data[$n*4+4]/100) .  ', "time":"'. $ddd .'" }
     }'. PHP_EOL;
 }
 $geojson = '{ "type": "FeatureCollection",
